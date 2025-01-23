@@ -1,0 +1,115 @@
+##
+## Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+##
+## NVIDIA CORPORATION, its affiliates and licensors retain all intellectual
+## property and proprietary rights in and to this material, related
+## documentation and any modifications thereto. Any use, reproduction,
+## disclosure or distribution of this material and related documentation
+## without an express license agreement from NVIDIA CORPORATION or
+## its affiliates is strictly prohibited.
+##
+
+robot_cfg:
+  kinematics:
+    usd_path: "xarm6/xarm6.usd"
+    usd_robot_root: "xarm6/xarm6.usd"
+    isaac_usd_path: ""
+    usd_flip_joints: {}
+    usd_flip_joint_limits: []
+    
+    asset_root_path: "/home/theobloesch/Documents/xArm6CurobowithGripper"
+    urdf_path: "xarm6.urdf"
+    
+    
+    base_link: "xarm6link_base"
+    ee_link: "xarm6link_tcp"
+    link_names: null
+    lock_joints: null
+    extra_links: null
+
+    
+    collision_link_names: ["xarm6link1", "xarm6link2", "xarm6link3", "xarm6link4", "xarm6link5", "xarm6link6","xarm6xarm_gripper_base_link"]
+    collision_spheres:
+      xarm6link1:
+        - "center": [0.0, -0.004, -0.078]
+          "radius": 0.079
+        - "center": [0.0, -0.009, -0.024]
+          "radius": 0.079
+        - "center": [0.0, 0.034, -0.023]
+          "radius": 0.079
+      xarm6link2:
+        - "center": [0.0, -0.004, 0.092]
+          "radius": 0.065
+        - "center": [0.0, -0.077, 0.084]
+          "radius": 0.065
+        - "center": [0.0, -0.112, 0.07]
+          "radius": 0.065
+        - "center": [0.0, -0.106, 0.0]
+          "radius": 0.065
+        - "center": [0.0, -0.169, 0.0]
+          "radius": 0.065
+        - "center": [0.007, -0.245, -0.011]
+          "radius": 0.065
+        - "center": [0.04, -0.286, -0.021]
+          "radius": 0.065
+        - "center": [0.056, -0.284, 0.026]
+          "radius": 0.065
+      xarm6link3:
+        - "center": [0.0, 0.0, 0.051]
+          "radius": 0.065
+        - "center": [0.036, 0.047, 0.077]
+          "radius": 0.065
+        - "center": [0.074, 0.082, 0.064]
+          "radius": 0.065
+        - "center": [0.076, 0.096, 0.0]
+          "radius": 0.065
+        - "center": [0.081, 0.172, 0.0]
+          "radius": 0.065
+      xarm6link4:
+        - "center": [0.0, 0.051, -0.102]
+          "radius": 0.065
+        - "center": [0.0, 0.054, -0.032]
+          "radius": 0.065
+        - "center": [0.0, 0.031, 0.0]
+          "radius": 0.065
+      xarm6link5:
+        - "center": [0.0, 0.0, 0.0]
+          "radius": 0.065
+        - "center": [0.061, 0.0, 0.0]
+          "radius": 0.065
+        - "center": [0.074, 0.024, 0.0]
+          "radius": 0.065
+      xarm6link6:
+        - "center": [0.0, 0.0, 0.0]
+          "radius": 0.065
+      xarm6xarm_gripper_base_link:
+        - "center": [0.0, 0.0, 0.075]
+          "radius": 0.055
+        - "center": [0.0, 0.054, 0.116]
+          "radius": 0.055
+        - "center": [0.0, -0.041, 0.109]
+          "radius": 0.055
+    collision_sphere_buffer: 0.005 # float or Dict[str, float]
+    extra_collision_spheres: {}
+    self_collision_ignore: {
+        "xarm6link1":["xarm6link2", "xarm6link3", "xarm6link4", "xarm6link5", "xarm6link6","xarm6xarm_gripper_base_link"],
+        "xarm6link2":["xarm6link1", "xarm6link3", "xarm6link4", "xarm6link5", "xarm6link6","xarm6xarm_gripper_base_link"],
+        "xarm6link3":["xarm6link2", "xarm6link1", "xarm6link4", "xarm6link5", "xarm6link6","xarm6xarm_gripper_base_link"],
+        "xarm6link4":["xarm6link2", "xarm6link3", "xarm6link1", "xarm6link5", "xarm6link6","xarm6xarm_gripper_base_link"],
+        "xarm6link5":["xarm6link2", "xarm6link3", "xarm6link4", "xarm6link1", "xarm6link6","xarm6xarm_gripper_base_link"],
+        "xarm6link6":["xarm6link2", "xarm6link3", "xarm6link4", "xarm6link5", "xarm6link1","xarm6xarm_gripper_base_link"],
+        "xarm6xarm_gripper_base_link":["xarm6link1","xarm6link2", "xarm6link3", "xarm6link4", "xarm6link5", "xarm6link6"]
+        }
+    self_collision_buffer: {} # Dict[str, float]
+
+    use_global_cumul: True
+    mesh_link_names: null # List[str]
+    external_asset_path: null # Use this to add path for externally located assets/robot folder.
+
+    cspace:
+      joint_names: ['xarm6joint1', 'xarm6joint2', 'xarm6joint3', 'xarm6joint4', 'xarm6joint5', 'xarm6joint6']
+      retract_config: [0., -0.3576, -0.258, 0., 0.6158, 0.]
+      null_space_weight:  [1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+      cspace_distance_weight: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+      max_jerk: 500.0
+      max_acceleration: 15.0
