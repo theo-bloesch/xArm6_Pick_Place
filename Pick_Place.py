@@ -313,6 +313,7 @@ class CuroboController(BaseController):
                     "/World/target",
                     "/World/defaultGroundPlane",
                     "/curobo",
+                    "/random_cube"
                 ],
             ).get_collision_check_world()
             print(len(obstacles.objects))
@@ -450,16 +451,15 @@ class CuroboController(BaseController):
         # Detach the object from the robot and remove the object from the motion generator
         self.motion_gen.detach_object_from_robot()
         
-    def close_gripper(self):
-        for i in range(0,500): 
+    def close_gripper(self,curobo):
+        gripper_positions = self.gripper.get_joint_positions()
+        while gripper_positions[0] < 0.628 :
+            print(gripper_positions)
             gripper_positions = self.gripper.get_joint_positions()
-            if i < 500:
-
-                #close the gripper slowly
-
-                self.gripper.apply_action(
-
-                    ArticulationAction(joint_positions=[gripper_positions[0] + 0.1, gripper_positions[1] - 0.1]))
+            self.gripper.apply_action(ArticulationAction(joint_positions=[gripper_positions[0] + 0.628, gripper_positions[1] - 0.628]))
+            curobo.my_world.step(render=True)
+        
+            
     
     def open_gripper(self):
         pass
@@ -482,10 +482,10 @@ class CuroboPickPlaceTasks(BaseTask):
         self.fancy_cube =  world.scene.add(
         DynamicCuboid(
             prim_path="/World/random_cube",
-            name="fancy_cube",
-            position=np.array([0.4, -0.2, 0.05]),
+            name="random_cube",
+            position=np.array([0.4, -0.2, self.target_height/2]),
             scale=np.array([self.target_depth, self.target_width, self.target_height]),
-            color=np.array([0, 1.0, 1.0]),
+            color=np.array([0, 1.0, 1.1]),
             orientation=np.array([0,0,-1,0]),
         ))
         
@@ -611,14 +611,17 @@ def main():
             print("Robot type", type(curobo.robot))   
         curobotask.update_goal() 
         curobo.get_current_eef_position()
-        art_action = curobo.forward2(goal_position=curobotask.goal_position, goal_orientation=curobotask.goal_orientation)
+        art_action = curobo.forward2(goal_position=position, goal_orientation=curobotask.goal_orientation)
         print("The current position of the cube is", position)
         print("The current orientation of the cube is", orientation)
         print("The current position of the end effector is", curobo.current_eef_position)
         print("The current orientation of the end effector is", curobo.current_eef_orientation)
         if curobo.is_target_reached(goal_position=curobotask.goal_position, goal_orientation=curobotask.goal_orientation)==True:
             print("Target reached")
-            curobo.close_gripper()
+            curobo.close_gripper(curobo)
+            print("closed gripper")
+            position = [0.4, -0.2, 0.15]
+            
     #     print("The distance between the cube and the end effector is", np.linalg.norm(position - curobo.current_eef_position))
     #     print("The distance between the orientation of the cube and the end effector is", 2*np.arccos(np.abs(np.dot(orientation, curobo.current_eef_orientation))))
     #     if curobo.is_target_reached(goal_position=position, goal_orientation=orientation)==False:
@@ -634,21 +637,21 @@ def main():
         if art_action is not None:
             curobo.articulation_controller.apply_action(art_action)      
             
-        # sim_js = curobo.robot.get_joints_state()    
-        # sim_js_names = curobo.robot.dof_names
-        # cu_js = JointState(
-        # position=curobo.tensor_args.to_device(sim_js.positions),
-        # velocity=curobo.tensor_args.to_device(sim_js.velocities),  # * 0.0,
-        # acceleration=curobo.tensor_args.to_device(sim_js.velocities) * 0.0,
-        # jerk=curobo.tensor_args.to_device(sim_js.velocities) * 0.0,
-        # joint_names=sim_js_names,
-        # )
+        sim_js = curobo.robot.get_joints_state()    
+        sim_js_names = curobo.robot.dof_names
+        cu_js = JointState(
+        position=curobo.tensor_args.to_device(sim_js.positions),
+        velocity=curobo.tensor_args.to_device(sim_js.velocities),  # * 0.0,
+        acceleration=curobo.tensor_args.to_device(sim_js.velocities) * 0.0,
+        jerk=curobo.tensor_args.to_device(sim_js.velocities) * 0.0,
+        joint_names=sim_js_names,
+        )
 
-        # cu_js.velocity *= 0.0
-        # cu_js.acceleration *= 0.0
+        cu_js.velocity *= 0.0
+        cu_js.acceleration *= 0.0
 
-        # cu_js = cu_js.get_ordered_joint_state(curobo.motion_gen.kinematics.joint_names)
-        # visualize_sphere(curobo.motion_gen, cu_js, spheres=None)         
+        cu_js = cu_js.get_ordered_joint_state(curobo.motion_gen.kinematics.joint_names)
+        visualize_sphere(curobo.motion_gen, cu_js, spheres=None)         
     # simulation_app.close()
              
         
