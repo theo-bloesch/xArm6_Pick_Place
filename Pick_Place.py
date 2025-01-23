@@ -313,7 +313,7 @@ class CuroboController(BaseController):
                     "/World/target",
                     "/World/defaultGroundPlane",
                     "/curobo",
-                    "/random_cube"
+                    
                 ],
             ).get_collision_check_world()
             print(len(obstacles.objects))
@@ -424,7 +424,7 @@ class CuroboController(BaseController):
         self.get_current_eef_position()
         # print("Error in position", np.linalg.norm(goal_position - self.current_eef_position))
         # print("Error in orientation", 2*np.arccos(np.abs(np.dot(goal_orientation, self.current_eef_orientation))))
-        if (np.linalg.norm(goal_position - self.current_eef_position) < 1e-4 and ((2*np.arccos(np.abs(np.dot(goal_orientation, self.current_eef_orientation))))< 1e-4)):
+        if (np.linalg.norm(goal_position - self.current_eef_position) < 1e-3 and ((2*np.arccos(np.abs(np.dot(goal_orientation, self.current_eef_orientation))))< 1e-2)):
             return True
         else:
             return False
@@ -451,18 +451,20 @@ class CuroboController(BaseController):
         # Detach the object from the robot and remove the object from the motion generator
         self.motion_gen.detach_object_from_robot()
         
-    def close_gripper(self,curobo):
+    def close_gripper(self):
         gripper_positions = self.gripper.get_joint_positions()
         while gripper_positions[0] < 0.628 :
             print(gripper_positions)
             gripper_positions = self.gripper.get_joint_positions()
             self.gripper.apply_action(ArticulationAction(joint_positions=[gripper_positions[0] + 0.628, gripper_positions[1] - 0.628]))
-            curobo.my_world.step(render=True)
-        
-            
-    
+            self.my_world.step(render=True)
     def open_gripper(self):
-        pass
+        gripper_positions = self.gripper.get_joint_positions()
+        while gripper_positions[0] > 1e-3 :
+            print(gripper_positions)
+            gripper_positions = self.gripper.get_joint_positions()
+            self.gripper.apply_action(ArticulationAction(joint_positions=[gripper_positions[0] - 0.628, gripper_positions[1] + 0.628]))
+            self.my_world.step(render=True)
         
     
 ####Attention update collision checking with the cube before picking
@@ -489,14 +491,17 @@ class CuroboPickPlaceTasks(BaseTask):
             orientation=np.array([0,0,-1,0]),
         ))
         
-
+    
         
         self.goal_position = self.fancy_cube.get_world_pose()[0]
+        self.goal_position[2] = self.target_height-0.025
         self.goal_orientation = self.fancy_cube.get_world_pose()[1]
         
     def update_goal(self):
         self.goal_position = self.fancy_cube.get_world_pose()[0]
+        self.goal_position[2] = self.target_height-0.025
         self.goal_orientation = self.fancy_cube.get_world_pose()[1]
+        print("target_position : ",self.goal_position)
        
     #comprendre comment fonctionne observations
     def get_observations(self,robot):
@@ -611,19 +616,33 @@ def main():
             print("Robot type", type(curobo.robot))   
         curobotask.update_goal() 
         curobo.get_current_eef_position()
-        art_action = curobo.forward2(goal_position=position, goal_orientation=curobotask.goal_orientation)
+        # Attention don't let the orientation of the cube when it's taken with the gripper
+        art_action = curobo.forward2(goal_position=position, goal_orientation=orientation)
         print("The current position of the cube is", position)
         print("The current orientation of the cube is", orientation)
         print("The current position of the end effector is", curobo.current_eef_position)
         print("The current orientation of the end effector is", curobo.current_eef_orientation)
+        # Attention don't let the orientation of the cube when it's taken with the gripper
         if curobo.is_target_reached(goal_position=curobotask.goal_position, goal_orientation=curobotask.goal_orientation)==True:
             print("Target reached")
-            curobo.close_gripper(curobo)
+            curobo.close_gripper()
             print("closed gripper")
-            position = [0.4, -0.2, 0.15]
+            position = [0.4, -0.2, 0.30]
+            orientation = [0,0,1,0]
+        else:
+            position = curobotask.goal_position
+            orientation = curobotask.goal_orientation
             
-    #     print("The distance between the cube and the end effector is", np.linalg.norm(position - curobo.current_eef_position))
-    #     print("The distance between the orientation of the cube and the end effector is", 2*np.arccos(np.abs(np.dot(orientation, curobo.current_eef_orientation))))
+            
+        if curobo.is_target_reached(goal_position=[0.4, -0.2, 0.30], goal_orientation=[0,0,1,0])==True:
+            print("Target 2 reached")
+            curobo.open_gripper()
+            position = curobotask.goal_position
+            orientation = curobotask.goal_orientation
+            
+            
+        print("The distance between the cube and the end effector is", np.linalg.norm(position - curobo.current_eef_position))
+        print("The distance between the orientation of the cube and the end effector is", 2*np.arccos(np.abs(np.dot(orientation, curobo.current_eef_orientation))))
     #     if curobo.is_target_reached(goal_position=position, goal_orientation=orientation)==False:
     #             art_action = curobo.forward2(goal_position=position, goal_orientation=orientation)
                 
