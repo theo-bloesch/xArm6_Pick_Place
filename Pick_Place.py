@@ -253,6 +253,9 @@ class CuroboController(BaseController):
                 values=np.array([5000 for i in range(len(self.idx_list))]), joint_indices=self.idx_list
             )
 
+    def motion_constraint(self):
+        # add constraints to the motion gen here : linear movement along z axis of the end effector
+        self.pose_metric = PoseCostMetric.create_grasp_approach_metric(offset_position=0.2,tstep_fraction=0.8, linear_axis=2)
         
     def config_motion_gen(self):
         
@@ -302,6 +305,9 @@ class CuroboController(BaseController):
         )
 
         print("Curobo is Ready")
+        
+        
+
     
     def update_world_obstacles(self):
             print("Updating world, reading w.r.t.", self.robot_prim_path)
@@ -322,9 +328,7 @@ class CuroboController(BaseController):
             print("Updated World")
             carb.log_info("Synced CuRobo world from stage.")
         
-    def motion_constraint(self):
-        # add constraints to the motion gen here : linear movement along z axis of the end effector
-        self.pose_metric = PoseCostMetric.create_grasp_approach_metric(offset_position=0.2,tstep_fraction=0.8, linear_axis=2)
+
         
                 
         
