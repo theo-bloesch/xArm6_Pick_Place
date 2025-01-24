@@ -151,20 +151,47 @@ Then we are going to create the main programme in the file ```pick_place_test.py
 
 ### class PickPlace(tasks.PickPlace)
 
-For this exemple we are going to use the PickPlace task from isaacSim. 
+For this exemple we are going to use the **PickPlace task** from **IsaacSim**. 
+
 we explaine the different argument and méthode:
 
-```__init__()```
-- ```cube_initial_position```: blabla
-- ```cube_initial_orientation```:
-- ```target_position```
-- ```offset```:
-- ```tasks.PickPlace.__init__()```:
+```class PickPlace(tasks.PickPlace)```
 
-```set_robot()```:
-- ```add_reference_to_stage```:
-- ```ParallelGripper```:
-- ```SingleManipulator```:
+The class inherits from tasks.PickPlace, meaning it extends the base pick-and-place functionality provided by that class.
+- ```__init__()```: Initialisation of our own PickPlace task to extends the base pick-and-place functionality
+    - ```name```:
+    - ```cube_initial_position```: The pick position
+    - ```cube_initial_orientation```: The initial orientation of the cube (default: [0.3, 0.3, 0.3]).
+    - ```target_position```: The position where we want the cube to be
+    - ```offset```: The end effector (gripper) offset position relative to the position of the cube. The cube position is located in its center.
+    - ```tasks.PickPlace.__init__()```: Initialisation of the PickPlace task from IsaaSim
+        - ...
+        - ```cube_size```: Calls the parent class's constructor with the given arguments and adds a default cube_size (5.15 cm x 5.15 cm x 10 cm).
+
+
+
+- ```set_robot()```: This method defines the robot and its components (like the gripper) that will perform the task. It sets the robot up in the simulation environment using an absolute path to the robot's asset file.
+    - ```add_reference_to_stage```: Loads the robot's asset (USD file) into the simulation stage at /World/xarm6
+    > [!Note]
+    > - The path is absolute, and the user must ensure the file exists at the specified location.
+    > - You can choose the prim_path where you want the robot in the stage but be carefule it must be the same everywhere (```add_reference_to_stage(usd_path=asset_path, prim_path="/World/xarm6"```)
+    - ```ParallelGripper```: Defines a parallel gripper with:
+        - ```end_effector_prim_path``` :The end-effector's path in the simulation (xarm6link_tcp).
+        - ```joint_opened_positions```: joint_prim_namesGripper joint names for control.
+        - ```joint_closed_positions``` : Joint positions for "opened" and "closed" states.
+        - ```action_deltas```: Small movements applied to the gripper joints to perform opening/closing actions.
+    - ```SingleManipulator```: Wraps the robot into a SingleManipulator object:
+        - ```prim_path```: Path in the simulation for the robot.
+        - ```name```: Name of the manipulator.
+        - ```end_effector_prim_name```: Specifies the end-effector (xarm6link_eef).
+        - ```gripper```: Associates the gripper defined earlier.
+    - ```SingleManipulator.set_joints_default_state()```:Initializes all joints to 0.0.
+Sets specific joints 7 and 8, gripper joints to 0.628
+> [!Note] **Documentation :**  
+>- [tasks.PickPlace](https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.core/docs/index.html?highlight=pickplace#pick-and-place)
+>- [add_reference_to_stage](https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.core/docs/index.html?highlight=add_reference_to_stage#module-omni.isaac.core.utils.stage)
+>- [ParallelGripper](https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.manipulators/docs/index.html?highlight=parallelgripper#parallel-gripper)
+>- [SingleManipulator](https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.manipulators/docs/index.html?highlight=singlemanipulator#module-omni.isaac.manipulators.manipulators.SingleManipulator)  
 
 ```python
 class PickPlace(tasks.PickPlace):
@@ -190,18 +217,18 @@ class PickPlace(tasks.PickPlace):
     def set_robot(self) -> SingleManipulator:
         #TODO: change the asset path here
         #absolute path needed
-        asset_path = "/home/theobloesch/Documents/xArm6Curobo/xarm6/xarm6.usd"
-        add_reference_to_stage(usd_path=asset_path, prim_path="/World/UF_ROBOT")
+        asset_path = "/home/theobloesch/xArm6_Pick_Place/with_rmpflow/xarm6_cfg_files/xarm6/xarm6.usd"
+        add_reference_to_stage(usd_path=asset_path, prim_path="/World/xarm6")
         
         gripper = ParallelGripper(
-            end_effector_prim_path="/World/UF_ROBOT/root_joint/xarm6link_eef",
+            end_effector_prim_path="/World/xarm6/root_joint/xarm6link_tcp",
             joint_prim_names=["xarm6drive_joint", "xarm6right_outer_knuckle_joint"],
             joint_opened_positions=np.array([0, 0]),
             joint_closed_positions=np.array([0.628, -0.628]),
             action_deltas=np.array([-0.2, 0.2]) )
-        manipulator = SingleManipulator(prim_path="/World/UF_ROBOT",
-                                        name="UF_ROBOT",
-                                        end_effector_prim_name="xarm6link_eef",
+        manipulator = SingleManipulator(prim_path="/World/xarm6",
+                                        name="xarm6",
+                                        end_effector_prim_name="xarm6link_tcp",
                                         gripper=gripper)
         joints_default_positions = np.zeros(12)
         joints_default_positions[7] = 0.628
@@ -209,10 +236,10 @@ class PickPlace(tasks.PickPlace):
         manipulator.set_joints_default_state(positions=joints_default_positions)
         return manipulator
 ```
-> [!Note]
->[tasks.PickPlace documentation](https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.core/docs/index.html?highlight=pickplace#pick-and-place)
 
 ### class PickPlaceController(manipulators_controllers.PickPlaceController)
+
+```class PickPlace(tasks.PickPlace)```
 
 ```python
 class PickPlaceController(manipulators_controllers.PickPlaceController):
@@ -252,7 +279,8 @@ class RMPFlowController(mg.MotionPolicyController):
         # TODO: change the follow paths
         self.rmpflow = mg.lula.motion_policies.RmpFlow(robot_description_path="rmpflow/robot_descriptor.yaml",
                                                         rmpflow_config_path="rmpflow/denso_rmpflow_common.yaml",
-                                                        urdf_path="/home/theobloesch/Documents/xArm6Curobo/xarm6.urdf",
+                                                        urdf_path="/home/theobloesch/xArm6_Pick_Place/with_rmpflow/xarm6_cfg_files/xarm6.urdf",
+,
                                                         end_effector_frame_name="xarm6link_eef",
                                                         maximum_substep_size=0.00334)
 
@@ -274,7 +302,7 @@ First we have to create a World with :
 my_world = World(stage_units_in_meters=1.0)
 ```
 > [!Note]
->[World documentation](https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.core/docs/index.html#module-omni.isaac.core.world)
+> **Documentation :** [World](https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.core/docs/index.html#module-omni.isaac.core.world)
 
 Then we can define our task with its name and the target_position :
 ```python

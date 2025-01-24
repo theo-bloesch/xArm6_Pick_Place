@@ -172,12 +172,12 @@ class PickPlace(tasks.PickPlace):
         #absolute path needed
         asset_path = "/home/theobloesch/xArm6_Pick_Place/with_rmpflow/xarm6_cfg_files/xarm6/xarm6.usd"
 
-        add_reference_to_stage(usd_path=asset_path, prim_path="/World/UF_ROBOT")
+        add_reference_to_stage(usd_path=asset_path, prim_path="/World/xarm6")
         
 
         gripper = ParallelGripper(
 
-            end_effector_prim_path="/World/UF_ROBOT/root_joint/xarm6link_tcp",
+            end_effector_prim_path="/World/xarm6/root_joint/xarm6link_tcp",
 
             joint_prim_names=["xarm6drive_joint", "xarm6right_outer_knuckle_joint"],
 
@@ -187,9 +187,9 @@ class PickPlace(tasks.PickPlace):
 
             action_deltas=np.array([-0.2, 0.2]) )
 
-        manipulator = SingleManipulator(prim_path="/World/UF_ROBOT",
+        manipulator = SingleManipulator(prim_path="/World/xarm6",
 
-                                        name="UF_ROBOT",
+                                        name="xarm6",
 
                                         end_effector_prim_name="xarm6link_tcp",
 
