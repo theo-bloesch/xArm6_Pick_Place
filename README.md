@@ -17,16 +17,145 @@ The application is sparated in two part :
 [Official IsaacSim documentation](https://docs.omniverse.nvidia.com/isaacsim/latest/advanced_tutorials/tutorial_advanced_adding_new_manipulator.html)
 
 > [!WARNING] 
-> If you want to use a robot imported from the urdf importer of IsaacSim you need to make this modification to your .USD file.
+> **If you want to use a robot imported from the urdf importer of IsaacSim you need to make this modification to your .USD file.**
 
 
 
 I adressed the problem to the Nvidia team you can check this discussion if there are any updates
 
-[Discussion on the Nvidia foru](https://forums.developer.nvidia.com/t/adding-a-new-manipulator-example-doesnt-work/319273/6)
+[Discussion on the Nvidia forum](https://forums.developer.nvidia.com/t/adding-a-new-manipulator-example-doesnt-work/319273/6)
 
+### rmpflow
+```yaml
+joint_limit_buffers: [.01, .01, .01, .01, .01, .01]
+rmp_params:
+    cspace_target_rmp:
+        metric_scalar: 50.
+        position_gain: 100.
+        damping_gain: 50.
+        robust_position_term_thresh: .5
+        inertia: 1.
+    cspace_trajectory_rmp:
+        p_gain: 100.
+        d_gain: 10.
+        ff_gain: .25
+        weight: 50.
+    cspace_affine_rmp:
+        final_handover_time_std_dev: .25
+        weight: 2000.
+    joint_limit_rmp:
+        metric_scalar: 1000.
+        metric_length_scale: .01
+        metric_exploder_eps: 1e-3
+        metric_velocity_gate_length_scale: .01
+        accel_damper_gain: 200.
+        accel_potential_gain: 1.
+        accel_potential_exploder_length_scale: .1
+        accel_potential_exploder_eps: 1e-2
+    joint_velocity_cap_rmp:
+        max_velocity: 1.
+        velocity_damping_region: .3
+        damping_gain: 1000.0
+        metric_weight: 100.
+    target_rmp:
+        accel_p_gain: 30.
+        accel_d_gain: 85.
+        accel_norm_eps: .075
+        metric_alpha_length_scale: .05
+        min_metric_alpha: .01
+        max_metric_scalar: 10000
+        min_metric_scalar: 2500
+        proximity_metric_boost_scalar: 20.
+        proximity_metric_boost_length_scale: .02
+        xi_estimator_gate_std_dev: 20000.
+        accept_user_weights: false
+    axis_target_rmp:
+        accel_p_gain: 210.
+        accel_d_gain: 60.
+        metric_scalar: 10
+        proximity_metric_boost_scalar: 3000.
+        proximity_metric_boost_length_scale: .08
+        xi_estimator_gate_std_dev: 20000.
+        accept_user_weights: false
+    collision_rmp:
+        damping_gain: 50.
+        damping_std_dev: .04
+        damping_robustness_eps: 1e-2
+        damping_velocity_gate_length_scale: .01
+        repulsion_gain: 800.
+        repulsion_std_dev: .01
+        metric_modulation_radius: .5
+        metric_scalar: 10000.
+        metric_exploder_std_dev: .02
+        metric_exploder_eps: .001
+    damping_rmp:
+        accel_d_gain: 30.
+        metric_scalar: 50.
+        inertia: 100.
+canonical_resolve:
+    max_acceleration_norm: 50.
+    projection_tolerance: .01
+    verbose: false
+body_cylinders:
+    - name: base
+      pt1: [0,0,.333]
+      pt2: [0,0,0.]
+      radius: .05
+body_collision_controllers:
+    - name: onrobot_rg6_base_link
+      radius: .05
+```
 
 ### Task
+```python
+from omni.isaac.manipulators import SingleManipulator
+from omni.isaac.manipulators.grippers import ParallelGripper
+from omni.isaac.core.utils.stage import add_reference_to_stage
+import omni.isaac.core.tasks as tasks
+from typing import Optional
+import numpy as np
+
+
+class PickPlace(tasks.PickPlace):
+    def __init__(
+        self,
+        name: str = "denso_pick_place",
+        cube_initial_position: Optional[np.ndarray] = None,
+        cube_initial_orientation: Optional[np.ndarray] = None,
+        target_position: Optional[np.ndarray] = None,
+        offset: Optional[np.ndarray] = None,
+    ) -> None:
+        tasks.PickPlace.__init__(
+            self,
+            name=name,
+            cube_initial_position=cube_initial_position,
+            cube_initial_orientation=cube_initial_orientation,
+            target_position=target_position,
+            cube_size=np.array([0.0515, 0.0515, 0.0515]),
+            offset=offset,
+        )
+        return
+
+    def set_robot(self) -> SingleManipulator:
+        #TODO: change the asset path here
+        asset_path = "/home/user_name/cobotta_pro_900/cobotta_pro_900/cobotta_pro_900.usd"
+        add_reference_to_stage(usd_path=asset_path, prim_path="/World/cobotta")
+        gripper = ParallelGripper(
+            end_effector_prim_path="/World/cobotta/onrobot_rg6_base_link",
+            joint_prim_names=["finger_joint", "right_outer_knuckle_joint"],
+            joint_opened_positions=np.array([0, 0]),
+            joint_closed_positions=np.array([0.628, -0.628]),
+            action_deltas=np.array([-0.2, 0.2]) )
+        manipulator = SingleManipulator(prim_path="/World/cobotta",
+                                        name="cobotta_robot",
+                                        end_effector_prim_name="onrobot_rg6_base_link",
+                                        gripper=gripper)
+        joints_default_positions = np.zeros(12)
+        joints_default_positions[7] = 0.628
+        joints_default_positions[8] = 0.628
+        manipulator.set_joints_default_state(positions=joints_default_positions)
+        return manipulator
+```
 
 ### Controller
 

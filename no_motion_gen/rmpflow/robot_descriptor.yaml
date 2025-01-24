@@ -1,0 +1,21 @@
+api_version: 1.0
+
+cspace:
+    - xarm6joint1
+    - xarm6joint2
+    - xarm6joint3
+    - xarm6joint4
+    - xarm6joint5
+    - xarm6joint6
+
+root_link: world
+
+default_q: [
+
+    0.00, 0.00, 0.00, 0.00, 0.00, 0.00
+
+]
+
+cspace_to_urdf_rules: []
+
+composite_task_spaces: []
