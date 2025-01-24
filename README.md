@@ -5,7 +5,7 @@ The application is sparated in two part :
 1. The simulation with isaac sim omniverse (trajectory generation with rmpflow)
 2. The trajectory generation with Curobo and the library Cumotion (with motion_gen)
 
-[Official IsaacSim documentation](https://docs.omniverse.nvidia.com/isaacsim/latest/advanced_tutorials/tutorial_advanced_adding_new_manipulator.html)
+[Official IsaacSim tutorial](https://docs.omniverse.nvidia.com/isaacsim/latest/advanced_tutorials/tutorial_advanced_adding_new_manipulator.html)
 
 
 [Official IsaacSim core documentation](https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.core/docs/index.html?highlight=basetask#)
