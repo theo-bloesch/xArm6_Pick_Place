@@ -213,6 +213,9 @@ class PickPlace(tasks.PickPlace):
 
 ## class PickPlaceController(manipulators_controllers.PickPlaceController)
 
+> [!Note]  
+> **Documentation :** [PickPlaceController](https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.manipulators/docs/index.html?highlight=pickplacecontroller#omni.isaac.manipulators.controllers.PickPlaceController)
+
 ```class PickPlace(tasks.PickPlace)```
 - ```__init__()```
     - ```name```:
@@ -258,16 +261,16 @@ class PickPlaceController(manipulators_controllers.PickPlaceController):
 
 ```class RMPFlowController(mg.MotionPolicyController)```
 - ```__init__()```
-    - ```name```:
-    - ```gripper```:
-    - ```robot_articulation```:
-    - ```physics_dt```:
-    - ```mg.lula.motion_policies.RmpFlow```:
-        - ```robot_description_path```:
-        - ```rmpflow_config_path```:
-        - ```urdf_path```:
-        - ```end_effector_frame_name```:
-        - ```maximum_substep_size```:
+    - ```name```:The name of the controller
+    - ```gripper```: The gripper
+    - ```robot_articulation```:Represents the articulated structure of the robot (joints and links).
+    - ```physics_dt```: Time step for the simulation, defaulting to 1/60 seconds
+    - ```mg.lula.motion_policies.RmpFlow```: Initializes the RMPFlow system, which generates smooth and compliant motions for the robot.
+        - ```robot_description_path```: Path to a YAML file describing the robot's physical properties.
+        - ```rmpflow_config_path```: Path to a configuration file containing parameters for RMPFlow, tailored for xArm6
+        - ```urdf_path```: Absolute path to the robot's URDF (Unified Robot Description Format) file, which defines its structure, joints, and links.
+        - ```end_effector_frame_name```: Specifies the name of the end-effector's frame (for motion planning and control).
+        - ```maximum_substep_size```: Defines the maximum substep size for fine-grained motion planning.
         ...
 
 
@@ -327,7 +330,8 @@ my_world.reset()
 > - This will do one step internally regardless
 > - Call post_reset on each object in the Scene
 > - Call post_reset on each Task
->- Things like setting PD gains for instance should happen at a Task reset or a Robot reset since the defaults are restored after stop method is called.
+> - Things like setting PD gains for instance should happen at a Task reset or a Robot reset since the defaults are restored after stop method is called.
+> - Documentation : [World.reset()](https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.core/docs/index.html?highlight=world%20reset#omni.isaac.core.world.World.reset)
 
 
 
@@ -337,9 +341,9 @@ task_params = my_world.get_task("denso_pick_place").get_params()
 denso_name = task_params["robot_name"]["value"]
 my_denso = my_world.scene.get_object(denso_name)
 ```
-- ask parameters (task_params) are retrieved, which include names of elements like the robot and the cube.
-- denso_name retrieves the name of the robot used in the task.
-- my_world.scene.get_object(denso_name) returns the robot instance in the simulation.
+- ```my_world.get_task("denso_pick_place").get_params()``` : task parameters are retrieved, which include names of elements like the robot and the cube.
+- ```task_params["robot_name"]["value"]``` retrieves the name of the robot used in the task.
+- ```my_world.scene.get_object(denso_name)``` returns the robot instance in the simulation.
 > [!Note]
 > Documentation : [BaseTask.get_params()](https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.core/docs/index.html?highlight=pickplace#omni.isaac.core.tasks.BaseTask.get_params)
 
@@ -348,39 +352,63 @@ After we initialize the robot controller
 ```python
 #initialize the controller
 my_controller = PickPlaceController(name="controller", robot_articulation=my_denso, gripper=my_denso.gripper)
-task_params = my_world.get_task("denso_pick_place").get_params()
+#task_params = my_world.get_task("denso_pick_place").get_params()
 articulation_controller = my_denso.get_articulation_controller()
 ```
-blablavlablabla
+- ```PickPlaceController()```:  A PickPlaceController is created to handle the robot's actions. It is initialized with:
+    - The robot (robot_articulation=my_denso).
+    - The robot's gripper (gripper=my_denso.gripper).
+- ```my_denso.get_articulation_controller()```: An articulation controller is retrieved from the robot to apply actions to its joints.
 
-While loop
-
-```my_world.step(render=True)```:
-
-```python    
-if my_world.is_playing():
-    if my_world.current_time_step_index == 0:
-        my_world.reset()
-        my_controller.reset()
-```
+### While loop
 
 ```python    
-observations = my_world.get_observations()
-#forward the observation values to the controller to get the actions
-actions = my_controller.forward(
-    picking_position=observations[task_params["cube_name"]["value"]]["position"],
-    placing_position=observations[task_params["cube_name"]["value"]]["target_position"],
-    current_joint_positions=observations[task_params["robot_name"]["value"]]["joint_positions"],
-    # This offset needs tuning as well
-    end_effector_offset=np.array([0, 0, 0.15]),
-)
+while simulation_app.is_running():
+    my_world.step(render=True)
+        if my_world.is_playing():
+            if my_world.current_time_step_index == 0:
+                my_world.reset()
+                my_controller.reset()
 ```
+```simulation_app.is_running()```:  The main loop runs as long as the simulation app is running. (We have to close the window to shutdown IsaacSim) 
+```my_world.step(render=True)```:  Advances the simulation by one step and renders the visuals
+```my_world.is_playing()```:  If the simulation is started with the play button in IsaacSim GUI, it could also be stopped or paused.
+```my_world.reset()```: If the simulation restarts (e.g., at the first timestep), the world and the controller are reset  
+```my_controller.reset()```: If the simulation restarts (e.g., at the first timestep), the world and the controller are reset
 
-```python
-articulation_controller.apply_action(actions) 
+> [!Note]  
+> [World.get_observation](https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.core/docs/index.html?highlight=world#omni.isaac.core.world.World.get_observations)
+```python    
+            observations = my_world.get_observations()
+            #forward the observation values to the controller to get the actions
+            actions = my_controller.forward(
+                picking_position=observations[task_params["cube_name"]["value"]]["position"],
+                placing_position=observations[task_params["cube_name"]["value"]]["target_position"],
+                current_joint_positions=observations[task_params["robot_name"]["value"]]["joint_positions"],
+                # This offset needs tuning as well
+                end_effector_offset=np.array([0, 0, 0.15]),
+            )
+            if my_controller.is_done():
+                print("done picking and placing")
+
+            articulation_controller.apply_action(actions)
 ```
+- ```my_world.get_observations()```: The current state of the simulation is retrieved. This includes object positions, joint positions, and other data.
+- ```my_controller.forward()```:  The controller calculates the actions required to:
 
-blablabla
+    - Pick the object: Based on its current position (picking_position).
+    - Place the object: Based on the target position (placing_position).
+    - Account for the current joint positions (current_joint_positions).
+    - Apply an offset for the end effector (end_effector_offset) to adjust the height.  
+        
+    It can get the pick and place position from :
+    - ```observations[task_params["cube_name"]["value"]]["position"]```: observations is a dictionary that contains the current state of all objects in the simulation.  
+    - It return the ```action``` that we have to pass to the ```.apply_action()``` methode of the ```articulation_controller```.
+Each object (robot, cube, etc.) has its own entry, which provides data like positions, orientations, joint states, and more.
+- ```my_controller.is_done()```:  The controller checks if the task is complete. If so, it prints a message.
+- ```articulation_controller.apply_action(actions)```: The calculated actions are applied to the robot's joints via the articulation controller.
+
+
 
 ```python
 

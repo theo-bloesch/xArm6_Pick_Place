@@ -227,7 +227,7 @@ my_denso = my_world.scene.get_object(denso_name)
 
 my_controller = PickPlaceController(name="controller", robot_articulation=my_denso, gripper=my_denso.gripper)
 
-task_params = my_world.get_task("denso_pick_place").get_params()
+#task_params = my_world.get_task("denso_pick_place").get_params()
 
 articulation_controller = my_denso.get_articulation_controller()
 
