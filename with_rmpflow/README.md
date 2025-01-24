@@ -258,6 +258,10 @@ class PickPlaceController(manipulators_controllers.PickPlaceController):
 ```
 
 ## RMPFlowController(mg.MotionPolicycontoller)
+> [!Note]  
+> Documentation :  
+>- [MotionPolicyController](https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.motion_generation/docs/index.html?highlight=motionpolicycontroller#omni.isaac.motion_generation.motion_policy_controller.MotionPolicyController)  
+>- [RMPFlowController](https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.franka/docs/index.html?highlight=rmpflowcontroller#omni.isaac.franka.controllers.RMPFlowController)  
 
 ```class RMPFlowController(mg.MotionPolicyController)```
 - ```__init__()```
@@ -306,7 +310,7 @@ my_world = World(stage_units_in_meters=1.0)
 - ```World()``` represents the simulation environment.
 - ```stage_units_in_meters=1.0``` means the units in the simulation are in meters.
 
-> [!Note]
+> [!Note]  
 > **Documentation :** [World](https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.core/docs/index.html#module-omni.isaac.core.world)
 
 Then we can define our Pick-and-Place Task with its name and the target_position :
@@ -344,7 +348,7 @@ my_denso = my_world.scene.get_object(denso_name)
 - ```my_world.get_task("denso_pick_place").get_params()``` : task parameters are retrieved, which include names of elements like the robot and the cube.
 - ```task_params["robot_name"]["value"]``` retrieves the name of the robot used in the task.
 - ```my_world.scene.get_object(denso_name)``` returns the robot instance in the simulation.
-> [!Note]
+> [!Note]  
 > Documentation : [BaseTask.get_params()](https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.core/docs/index.html?highlight=pickplace#omni.isaac.core.tasks.BaseTask.get_params)
 
 After we initialize the robot controller 
@@ -377,7 +381,7 @@ while simulation_app.is_running():
 ```my_controller.reset()```: If the simulation restarts (e.g., at the first timestep), the world and the controller are reset
 
 > [!Note]  
-> [World.get_observation](https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.core/docs/index.html?highlight=world#omni.isaac.core.world.World.get_observations)
+> Documentation : [World.get_observation](https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.core/docs/index.html?highlight=world#omni.isaac.core.world.World.get_observations)
 ```python    
             observations = my_world.get_observations()
             #forward the observation values to the controller to get the actions
