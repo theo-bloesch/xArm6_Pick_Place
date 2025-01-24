@@ -29,9 +29,7 @@ The application is sparated in two part :
     ![Alt text](/img/frame_tree.png "usd file after modification")
 
 > [!Note]
-> I adressed the problem to the Nvidia team you can check this discussion if there are any updates
-
-[Discussion on the Nvidia forum](https://forums.developer.nvidia.com/t/adding-a-new-manipulator-example-doesnt-work/319273/6)
+> **I adressed the problem to the Nvidia team you can check this discussion if there are any updates.** [Discussion on the Nvidia forum](https://forums.developer.nvidia.com/t/adding-a-new-manipulator-example-doesnt-work/319273/6)
 
 ### rmpflow
 ```yaml
