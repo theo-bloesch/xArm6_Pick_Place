@@ -241,6 +241,15 @@ class PickPlace(tasks.PickPlace):
 ### class PickPlaceController(manipulators_controllers.PickPlaceController)
 
 ```class PickPlace(tasks.PickPlace)```
+- ```__init__()```
+    - ```name```:
+    - ```gripper```:
+    - ```robot_articulation```:
+    - ```event_dt```:
+    - ```manipulators_controllers.PickPlaceController.__init__()```:
+        - ...
+        - ```cspace_controller```:
+        - ```end_effector_initial_height```:
 
 ```python
 class PickPlaceController(manipulators_controllers.PickPlaceController):
@@ -273,6 +282,22 @@ class PickPlaceController(manipulators_controllers.PickPlaceController):
 ```
 
 ### RMPFlowController(mg.MotionPolicycontoller)
+
+```class RMPFlowController(mg.MotionPolicyController)```
+- ```__init__()```
+    - ```name```:
+    - ```gripper```:
+    - ```robot_articulation```:
+    - ```physics_dt```:
+    - ```mg.lula.motion_policies.RmpFlow```:
+        - ```robot_description_path```:
+        - ```rmpflow_config_path```:
+        - ```urdf_path```:
+        - ```end_effector_frame_name```:
+        - ```maximum_substep_size```:
+        ...
+
+
 ```python
 class RMPFlowController(mg.MotionPolicyController):
 
@@ -315,6 +340,52 @@ my_task = PickPlace(name="denso_pick_place", target_position=target_position)
 
 ```
 the target potition define here is the position where the cube is going to be placed 
+
+
+
+Then we can get the parameter of the tasks. This is defined differently for each task in order to access the task’s objects and values.
+```python
+task_params = my_world.get_task("denso_pick_place").get_params()
+denso_name = task_params["robot_name"]["value"]
+my_denso = my_world.scene.get_object(denso_name)
+```
+> [!Note]
+> Documentation : [BaseTask.get_params()](https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.core/docs/index.html?highlight=pickplace#omni.isaac.core.tasks.BaseTask.get_params)
+
+After we initialize the robot controller 
+
+```python
+#initialize the controller
+my_controller = PickPlaceController(name="controller", robot_articulation=my_denso, gripper=my_denso.gripper)
+task_params = my_world.get_task("denso_pick_place").get_params()
+articulation_controller = my_denso.get_articulation_controller()
+```
+blablavlablabla
+
+While loop
+
+```my_world.step(render=True)```:
+
+```python    
+if my_world.is_playing():
+    if my_world.current_time_step_index == 0:
+        my_world.reset()
+        my_controller.reset()
+```
+
+```python    
+observations = my_world.get_observations()
+#forward the observation values to the controller to get the actions
+actions = my_controller.forward(
+    picking_position=observations[task_params["cube_name"]["value"]]["position"],
+    placing_position=observations[task_params["cube_name"]["value"]]["target_position"],
+    current_joint_positions=observations[task_params["robot_name"]["value"]]["joint_positions"],
+    # This offset needs tuning as well
+    end_effector_offset=np.array([0, 0, 0.15]),
+)
+```
+
+```articulation_controller.apply_action(actions) ```: blablabla
 
 ```python
 
@@ -365,8 +436,7 @@ simulation_app.close()
 
 ``` 
 
-
-[![Watch the video](https://raw.githubusercontent.com/theo-bloesch/xArm6_Pick_Place/img/PickPlaceRmp.mp4)](img/PickPlaceRmp.mp4)
+![Pick Place example with rmpflow motion generation](img/PickPlaceRMP.gif)
 
 
 ## Motion generation with Curobo
