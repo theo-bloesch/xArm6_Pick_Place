@@ -16,7 +16,8 @@ The application is sparated in two part :
 ## Simulation with IsaacSim
 [Official IsaacSim documentation](https://docs.omniverse.nvidia.com/isaacsim/latest/advanced_tutorials/tutorial_advanced_adding_new_manipulator.html)
 
-[!WARNING] If you want to use a robot imported from the urdf importer of IsaacSim you need to make this modification to your .USD file.
+> [!WARNING] 
+> If you want to use a robot imported from the urdf importer of IsaacSim you need to make this modification to your .USD file.
 
 
 
