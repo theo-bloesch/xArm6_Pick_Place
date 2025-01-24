@@ -2,8 +2,8 @@
 
 The application is sparated in two part :
 
-1. The simulation with isaac sim omniverse
-2. The trajectory generation with Curobo and the library Cumotion
+1. The simulation with isaac sim omniverse (trajectory generation with rmpflow)
+2. The trajectory generation with Curobo and the library Cumotion (with motion_gen)
 
 [Official IsaacSim documentation](https://docs.omniverse.nvidia.com/isaacsim/latest/advanced_tutorials/tutorial_advanced_adding_new_manipulator.html)
 
@@ -12,9 +12,6 @@ The application is sparated in two part :
 
 
 [Official Curobo documentation](https://curobo.org/get_started/2a_python_examples.html)
-
-## Simulation with IsaacSim
-[Official IsaacSim documentation](https://docs.omniverse.nvidia.com/isaacsim/latest/advanced_tutorials/tutorial_advanced_adding_new_manipulator.html)
 
 > [!WARNING] 
 > **If you want to use a robot imported from the urdf importer of IsaacSim you need to make this modification to your .USD file.**
@@ -31,7 +28,42 @@ The application is sparated in two part :
 > [!Note]
 > **I adressed the problem to the Nvidia team you can check this discussion if there are any updates.** [Discussion on the Nvidia forum](https://forums.developer.nvidia.com/t/adding-a-new-manipulator-example-doesnt-work/319273/6)
 
-### rmpflow
+## Simulation with IsaacSim and path generation with rmpflow
+[Official IsaacSim documentation](https://docs.omniverse.nvidia.com/isaacsim/latest/advanced_tutorials/tutorial_advanced_adding_new_manipulator.html)
+
+Once this modification has been made we can begin to simulate our robot. For that we need several file or code part. Here we decided to make all the code in two file but in the Isaac sim exemple the split the code in several file.
+
+First we need to define our robot description to pass it to the rmpflow motion generator.
+For that we create a folder rmp and inside it a file named ```robot_descriptor.yaml```. Make sure that the joint are the same that the one define in your **.usd**
+
+### robot_descriptor.yaml
+
+```yaml
+api_version: 1.0
+
+cspace:
+    - xarm6joint1
+    - xarm6joint2
+    - xarm6joint3
+    - xarm6joint4
+    - xarm6joint5
+    - xarm6joint6
+
+root_link: world
+
+default_q: [
+
+    0.00, 0.00, 0.00, 0.00, 0.00, 0.00
+
+]
+
+cspace_to_urdf_rules: []
+
+composite_task_spaces: []
+```
+
+Then in the same folder create the file ```denso_rmpflow_common.yaml```
+
 ```yaml
 joint_limit_buffers: [.01, .01, .01, .01, .01, .01]
 rmp_params:
@@ -108,25 +140,18 @@ body_cylinders:
       pt2: [0,0,0.]
       radius: .05
 body_collision_controllers:
-    - name: onrobot_rg6_base_link
+    - name: xarm6link_eef
       radius: .05
 ```
+Then we are going to create the main programme in the file ```pick_place_test.py``` and we will need several classe for that :
 
-### Task
+### class PickPlace(tasks.PickPlace)
 ```python
-from omni.isaac.manipulators import SingleManipulator
-from omni.isaac.manipulators.grippers import ParallelGripper
-from omni.isaac.core.utils.stage import add_reference_to_stage
-import omni.isaac.core.tasks as tasks
-from typing import Optional
-import numpy as np
-
-
 class PickPlace(tasks.PickPlace):
     def __init__(
         self,
         name: str = "denso_pick_place",
-        cube_initial_position: Optional[np.ndarray] = None,
+        cube_initial_position: Optional[np.ndarray] = [0.3,0.3,0.3],
         cube_initial_orientation: Optional[np.ndarray] = None,
         target_position: Optional[np.ndarray] = None,
         offset: Optional[np.ndarray] = None,
@@ -137,24 +162,25 @@ class PickPlace(tasks.PickPlace):
             cube_initial_position=cube_initial_position,
             cube_initial_orientation=cube_initial_orientation,
             target_position=target_position,
-            cube_size=np.array([0.0515, 0.0515, 0.0515]),
+            cube_size=np.array([0.0515, 0.0515, 0.1]),
             offset=offset,
         )
         return
 
     def set_robot(self) -> SingleManipulator:
         #TODO: change the asset path here
-        asset_path = "/home/user_name/cobotta_pro_900/cobotta_pro_900/cobotta_pro_900.usd"
-        add_reference_to_stage(usd_path=asset_path, prim_path="/World/cobotta")
+        asset_path = "/home/theobloesch/Documents/xArm6Curobo/xarm6/xarm6.usd"
+        add_reference_to_stage(usd_path=asset_path, prim_path="/World/UF_ROBOT")
+        
         gripper = ParallelGripper(
-            end_effector_prim_path="/World/cobotta/onrobot_rg6_base_link",
-            joint_prim_names=["finger_joint", "right_outer_knuckle_joint"],
+            end_effector_prim_path="/World/UF_ROBOT/root_joint/xarm6link_eef",
+            joint_prim_names=["xarm6drive_joint", "xarm6right_outer_knuckle_joint"],
             joint_opened_positions=np.array([0, 0]),
             joint_closed_positions=np.array([0.628, -0.628]),
             action_deltas=np.array([-0.2, 0.2]) )
-        manipulator = SingleManipulator(prim_path="/World/cobotta",
-                                        name="cobotta_robot",
-                                        end_effector_prim_name="onrobot_rg6_base_link",
+        manipulator = SingleManipulator(prim_path="/World/UF_ROBOT",
+                                        name="UF_ROBOT",
+                                        end_effector_prim_name="xarm6link_eef",
                                         gripper=gripper)
         joints_default_positions = np.zeros(12)
         joints_default_positions[7] = 0.628
@@ -163,9 +189,110 @@ class PickPlace(tasks.PickPlace):
         return manipulator
 ```
 
-### Controller
+### class PickPlaceController(manipulators_controllers.PickPlaceController)
+```python
+class PickPlaceController(manipulators_controllers.PickPlaceController):
 
-### Main programme
+    def __init__(
+        self,
+        name: str,
+        gripper: ParallelGripper,
+        robot_articulation: Articulation,
+        events_dt=None
+    ) -> None:
+
+        if events_dt is None:
+            #These values needs to be tuned in general, you checkout each event in execution and slow it down or speed
+            #it up depends on how smooth the movments are
+            events_dt = [0.005, 0.002, 1, 0.05, 0.0008, 0.005, 0.0008, 0.1, 0.0008, 0.008]
+        manipulators_controllers.PickPlaceController.__init__(
+            self,
+            name=name,
+            cspace_controller=RMPFlowController(
+                name=name + "_cspace_controller", robot_articulation=robot_articulation
+            ),
+            gripper=gripper,
+            events_dt=events_dt,
+            #This value can be changed
+            # start_picking_height=0.6
+            end_effector_initial_height=0.6,
+        )
+        return
+```
+
+### RMPFlowController(mg.MotionPolicycontoller)
+```python
+class RMPFlowController(mg.MotionPolicyController):
+
+    def __init__(self, name: str, robot_articulation: Articulation, physics_dt: float = 1.0 / 60.0) -> None:
+        # TODO: change the follow paths
+        self.rmpflow = mg.lula.motion_policies.RmpFlow(robot_description_path="rmpflow/robot_descriptor.yaml",
+                                                        rmpflow_config_path="rmpflow/denso_rmpflow_common.yaml",
+                                                        urdf_path="/home/theobloesch/Documents/xArm6Curobo/xarm6.urdf",
+                                                        end_effector_frame_name="xarm6link_eef",
+                                                        maximum_substep_size=0.00334)
+
+        self.articulation_rmp = mg.ArticulationMotionPolicy(robot_articulation, self.rmpflow, physics_dt)
+        mg.MotionPolicyController.__init__(self, name=name, articulation_motion_policy=self.articulation_rmp)
+        self._default_position, self._default_orientation = (
+            self._articulation_motion_policy._robot_articulation.get_world_pose()
+        )
+        self._motion_policy.set_robot_base_pose(
+            robot_position=self._default_position, robot_orientation=self._default_orientation
+        )
+        return
+```
+
+### Main program
+
+```python
+
+my_world = World(stage_units_in_meters=1.0)
+
+target_position = np.array([0.3, 0.3, 0])
+target_position[2] = 0.0515 / 2.0
+
+my_task = PickPlace(name="denso_pick_place", target_position=target_position)
+my_world.add_task(my_task)
+my_world.reset()
+
+task_params = my_world.get_task("denso_pick_place").get_params()
+denso_name = task_params["robot_name"]["value"]
+my_denso = my_world.scene.get_object(denso_name)
+
+#initialize the controller
+my_controller = PickPlaceController(name="controller", robot_articulation=my_denso, gripper=my_denso.gripper)
+task_params = my_world.get_task("denso_pick_place").get_params()
+articulation_controller = my_denso.get_articulation_controller()
+
+while simulation_app.is_running():
+
+    my_world.step(render=True)
+    
+    if my_world.is_playing():
+        if my_world.current_time_step_index == 0:
+            my_world.reset()
+            my_controller.reset()
+
+        observations = my_world.get_observations()
+
+        #forward the observation values to the controller to get the actions
+        actions = my_controller.forward(
+            picking_position=observations[task_params["cube_name"]["value"]]["position"],
+            placing_position=observations[task_params["cube_name"]["value"]]["target_position"],
+            current_joint_positions=observations[task_params["robot_name"]["value"]]["joint_positions"],
+            # This offset needs tuning as well
+            end_effector_offset=np.array([0, 0, 0.15]),
+        )
+
+        if my_controller.is_done():
+            print("done picking and placing")
+
+        articulation_controller.apply_action(actions)
+        
+simulation_app.close()
+
+``` 
 
 
 

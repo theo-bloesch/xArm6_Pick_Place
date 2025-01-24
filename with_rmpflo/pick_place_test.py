@@ -209,8 +209,6 @@ class PickPlace(tasks.PickPlace):
 
 my_world = World(stage_units_in_meters=1.0)
 
-
-
 target_position = np.array([0.3, 0.3, 0])
 
 target_position[2] = 0.0515 / 2.0
