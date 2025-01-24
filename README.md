@@ -33,10 +33,12 @@ The application is sparated in two part :
 
 Once this modification has been made we can begin to simulate our robot. For that we need several file or code part. Here we decided to make all the code in two file but in the Isaac sim exemple the split the code in several file.
 
+We are going to make a simple pick and place task to verify that our robot works correctly.
+
 First we need to define our robot description to pass it to the rmpflow motion generator.
 For that we create a folder rmp and inside it a file named ```robot_descriptor.yaml```. Make sure that the joint are the same that the one define in your **.usd**
 
-### robot_descriptor.yaml
+### rmp/robot_descriptor.yaml
 
 ```yaml
 api_version: 1.0
@@ -63,6 +65,8 @@ composite_task_spaces: []
 ```
 
 Then in the same folder create the file ```denso_rmpflow_common.yaml```
+
+### rmp/denso_rmpflow_common.yaml
 
 ```yaml
 joint_limit_buffers: [.01, .01, .01, .01, .01, .01]
@@ -146,6 +150,22 @@ body_collision_controllers:
 Then we are going to create the main programme in the file ```pick_place_test.py``` and we will need several classe for that :
 
 ### class PickPlace(tasks.PickPlace)
+
+For this exemple we are going to use the PickPlace task from isaacSim. 
+we explaine the different argument and méthode:
+
+```__init__()```
+- ```cube_initial_position```: blabla
+- ```cube_initial_orientation```:
+- ```target_position```
+- ```offset```:
+- ```tasks.PickPlace.__init__()```:
+
+```set_robot()```:
+- ```add_reference_to_stage```:
+- ```ParallelGripper```:
+- ```SingleManipulator```:
+
 ```python
 class PickPlace(tasks.PickPlace):
     def __init__(
@@ -169,6 +189,7 @@ class PickPlace(tasks.PickPlace):
 
     def set_robot(self) -> SingleManipulator:
         #TODO: change the asset path here
+        #absolute path needed
         asset_path = "/home/theobloesch/Documents/xArm6Curobo/xarm6/xarm6.usd"
         add_reference_to_stage(usd_path=asset_path, prim_path="/World/UF_ROBOT")
         
@@ -188,8 +209,11 @@ class PickPlace(tasks.PickPlace):
         manipulator.set_joints_default_state(positions=joints_default_positions)
         return manipulator
 ```
+> [!Note]
+>[tasks.PickPlace documentation](https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.core/docs/index.html?highlight=pickplace#pick-and-place)
 
 ### class PickPlaceController(manipulators_controllers.PickPlaceController)
+
 ```python
 class PickPlaceController(manipulators_controllers.PickPlaceController):
 
@@ -245,6 +269,24 @@ class RMPFlowController(mg.MotionPolicyController):
 
 ### Main program
 
+First we have to create a World with : 
+```python
+my_world = World(stage_units_in_meters=1.0)
+```
+> [!Note]
+>[World documentation](https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.core/docs/index.html#module-omni.isaac.core.world)
+
+Then we can define our task with its name and the target_position :
+```python
+
+target_position = np.array([0.3, 0.3, 0])
+target_position[2] = 0.0515 / 2.0
+
+my_task = PickPlace(name="denso_pick_place", target_position=target_position)
+
+```
+the target potition define here is the position where the cube is going to be placed 
+
 ```python
 
 my_world = World(stage_units_in_meters=1.0)
@@ -288,11 +330,13 @@ while simulation_app.is_running():
         if my_controller.is_done():
             print("done picking and placing")
 
-        articulation_controller.apply_action(actions)
-        
+        articulation_controller.apply_action(actions) 
+
 simulation_app.close()
 
 ``` 
+
+
 
 
 
