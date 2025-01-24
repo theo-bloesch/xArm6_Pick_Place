@@ -20,8 +20,16 @@ The application is sparated in two part :
 > **If you want to use a robot imported from the urdf importer of IsaacSim you need to make this modification to your .USD file.**
 
 
+1. Open the **.usd** file of your robot with isaac sim
 
-I adressed the problem to the Nvidia team you can check this discussion if there are any updates
+    ![Alt text](/img/usd_before%20modification.png "usd file before modification")
+
+2. Place the frame of your and effector here **xarmlink_tcp** under the root joint
+
+    ![Alt text](/img/frame_tree.png "usd file after modification")
+
+> [!Note]
+> I adressed the problem to the Nvidia team you can check this discussion if there are any updates
 
 [Discussion on the Nvidia forum](https://forums.developer.nvidia.com/t/adding-a-new-manipulator-example-doesnt-work/319273/6)
 
