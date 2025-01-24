@@ -187,7 +187,8 @@ The class inherits from tasks.PickPlace, meaning it extends the base pick-and-pl
         - ```gripper```: Associates the gripper defined earlier.
     - ```SingleManipulator.set_joints_default_state()```:Initializes all joints to 0.0.
 Sets specific joints 7 and 8, gripper joints to 0.628
-> [!Note] **Documentation :**  
+> [!Note]  
+> **Documentation :**  
 >- [tasks.PickPlace](https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.core/docs/index.html?highlight=pickplace#pick-and-place)
 >- [add_reference_to_stage](https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.core/docs/index.html?highlight=add_reference_to_stage#module-omni.isaac.core.utils.stage)
 >- [ParallelGripper](https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.manipulators/docs/index.html?highlight=parallelgripper#parallel-gripper)
