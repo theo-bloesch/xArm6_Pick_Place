@@ -1,9 +1,12 @@
 # Simulation with IsaacSim and path generation with rmpflow
-[Official IsaacSim documentation](https://docs.omniverse.nvidia.com/isaacsim/latest/advanced_tutorials/tutorial_advanced_adding_new_manipulator.html)
+
+> [!Note]
+> **Documentation :**  
+[Official IsaacSim tutorial](https://docs.omniverse.nvidia.com/isaacsim/latest/advanced_tutorials/tutorial_advanced_adding_new_manipulator.html)
 
 Once this modification has been made we can begin to simulate our robot. For that we need several file or code part. Here we decided to make all the code in two file but in the Isaac sim exemple the split the code in several file.
 
-We are going to make a simple pick and place task to verify that our robot works correctly.
+We are going to make a simple pick and place task to verify that our robot works correctly. You can find the entire code [here](with_rmpflow/pick_place_test.py).
 
 First we need to define our robot description to pass it to the rmpflow motion generator.
 For that we create a folder rmp and inside it a file named ```robot_descriptor.yaml```. Make sure that the joint are the same that the one define in your **.usd**
@@ -293,23 +296,38 @@ class RMPFlowController(mg.MotionPolicyController):
 
 ## Main program
 
-First we have to create a World with : 
+First we create the Simulation Environment with World : 
 ```python
 my_world = World(stage_units_in_meters=1.0)
 ```
+- ```World()``` represents the simulation environment.
+- ```stage_units_in_meters=1.0``` means the units in the simulation are in meters.
+
 > [!Note]
 > **Documentation :** [World](https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.core/docs/index.html#module-omni.isaac.core.world)
 
-Then we can define our task with its name and the target_position :
+Then we can define our Pick-and-Place Task with its name and the target_position :
 ```python
 
 target_position = np.array([0.3, 0.3, 0])
 target_position[2] = 0.0515 / 2.0
 
 my_task = PickPlace(name="denso_pick_place", target_position=target_position)
+my_world.add_task(my_task)
+my_world.reset()
 
 ```
-the target potition define here is the position where the cube is going to be placed 
+- ```target_position``` : define here is the position where the cube is going to be placed.Be careful the reference prim for the cube position is in its center there is why the z-axis position can't be 0.
+- ```my_task``` : PickPlace task is initialized with a name ("denso_pick_place") and the target position defined earlier.
+- ```reset```: resets the simulation world to its initial state.
+> [!Note]  
+> - All tasks should be added before the first reset is called unless the clear method was called.
+> - All articulations should be added before the first reset is called unless the clear method was called.
+> - This method takes care of initializing articulation handles with the first reset called.
+> - This will do one step internally regardless
+> - Call post_reset on each object in the Scene
+> - Call post_reset on each Task
+>- Things like setting PD gains for instance should happen at a Task reset or a Robot reset since the defaults are restored after stop method is called.
 
 
 
@@ -319,6 +337,9 @@ task_params = my_world.get_task("denso_pick_place").get_params()
 denso_name = task_params["robot_name"]["value"]
 my_denso = my_world.scene.get_object(denso_name)
 ```
+- ask parameters (task_params) are retrieved, which include names of elements like the robot and the cube.
+- denso_name retrieves the name of the robot used in the task.
+- my_world.scene.get_object(denso_name) returns the robot instance in the simulation.
 > [!Note]
 > Documentation : [BaseTask.get_params()](https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.core/docs/index.html?highlight=pickplace#omni.isaac.core.tasks.BaseTask.get_params)
 
