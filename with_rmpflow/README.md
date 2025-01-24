@@ -374,11 +374,11 @@ while simulation_app.is_running():
                 my_world.reset()
                 my_controller.reset()
 ```
-```simulation_app.is_running()```:  The main loop runs as long as the simulation app is running. (We have to close the window to shutdown IsaacSim) 
-```my_world.step(render=True)```:  Advances the simulation by one step and renders the visuals
-```my_world.is_playing()```:  If the simulation is started with the play button in IsaacSim GUI, it could also be stopped or paused.
-```my_world.reset()```: If the simulation restarts (e.g., at the first timestep), the world and the controller are reset  
-```my_controller.reset()```: If the simulation restarts (e.g., at the first timestep), the world and the controller are reset
+- ```simulation_app.is_running()```:  The main loop runs as long as the simulation app is running. (We have to close the window to shutdown IsaacSim) 
+- ```my_world.step(render=True)```:  Advances the simulation by one step and renders the visuals
+- ```my_world.is_playing()```:  If the simulation is started with the play button in IsaacSim GUI, it could also be stopped or paused.
+- ```my_world.reset()```: If the simulation restarts (e.g., at the first timestep), the world and the controller are reset  
+- ```my_controller.reset()```: If the simulation restarts (e.g., at the first timestep), the world and the controller are reset
 
 > [!Note]  
 > Documentation : [World.get_observation](https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.core/docs/index.html?highlight=world#omni.isaac.core.world.World.get_observations)
