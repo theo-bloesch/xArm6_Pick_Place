@@ -144,7 +144,7 @@ The class inherits from tasks.PickPlace, meaning it extends the base pick-and-pl
 
 
 - ```set_robot()```: This method defines the robot and its components (like the gripper) that will perform the task. It sets the robot up in the simulation environment using an absolute path to the robot's asset file.
-    - ```add_reference_to_stage```: Loads the robot's asset (USD file) into the simulation stage at /World/xarm6
+    - ```add_reference_to_stage```: Loads the robot's asset (USD file) into the simulation stage at /World/xarm6  
     > [!Note]
     > - The ```asset_path``` is absolute, and the user must ensure the file exists at the specified location.
     > - You can choose the prim_path where you want the robot in the stage but be carefule it must be the same everywhere (```add_reference_to_stage(usd_path=asset_path, prim_path="/World/xarm6"```)
