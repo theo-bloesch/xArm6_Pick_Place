@@ -1,5 +1,7 @@
 ## Motion generation with Curobo
 
+First we are going to explain the one of the Curobo example to generate a collision fre trajectory.
+
 [Official Curobo documentation](https://curobo.org/get_started/2a_python_examples.html)
 
 - ```world_config```: This dictionary defines the environment configuration for the simulation or planning  
@@ -97,7 +99,7 @@ traj = result.get_interpolated_plan()  # result.interpolation_dt has the dt betw
 print("Trajectory Generated: ", result.success)
 ```
 
-> [!Notes]  
+> [!Note]  
 > **Documentations :**  
 > [MotionGenConfig](https://curobo.org/_api/curobo.wrap.reacher.motion_gen.html#curobo.wrap.reacher.motion_gen.MotionGenConfig)  
 > [MotionGenConfig.load_from_robot_config()](https://curobo.org/_api/curobo.wrap.reacher.motion_gen.html#curobo.wrap.reacher.motion_gen.MotionGenConfig.load_from_robot_config)  
