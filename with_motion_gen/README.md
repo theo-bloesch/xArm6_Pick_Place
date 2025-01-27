@@ -10,16 +10,19 @@
         - ```dims``` : The cuboid's dimensions (x, y, z).
         - ```pose``` : The pose of the cuboid in the environment.
 - ```motion_gen_config```: Loads motion generation configuration from a robot-specific YAML.
-    - file (ur5e.yml), along 
-    - with the world_config. 
-    - ```interpolation_dt=0.01```
-Specifies the time interval for interpolating the motion plan.
-- ```motion_gen```:
-- ```motion_gen.warmup()```:
-- ```goal_pose```:
-- ```start_state```:
-- ```result```:
-- ```tra```:  
+    - ```"ur5e.yml"``` : Path to the robot's configuration YAML file. 
+    - ```world_config``` : The environment configuration dictionary 
+    - ```interpolation_dt=0.01``` : Specifies the time interval for interpolating the motion plan.  
+
+- **Return type**: 
+    - ```MotionGenConfig``` : The loaded motion generation configuration object. 
+
+- ```motion_gen(motion_gen_config)```: Initializes the motion generator using a ```MotionGenConfig``` object.
+- ```motion_gen.warmup()```: Prepares the motion generator for motion planning by initializing internal data structures.
+- ```goal_pose = Pose.from_list()```: Creates a Pose object from a list of 7 elements representing position and orientation in quaternion format.
+- ```start_state = JointState.from_position```: Creates a JointState object with specified joint positions and joint names.
+- ```result = motion_gen.plan_single```: Plans a motion from the given start state to the goal pose
+- ```traj = result.get_interpolated_plan()```:  Retrieves the interpolated trajectory from the planning result.
 
 To obtain collision-free trajectories, use ```MotionGen```. An example is below,
 ```python
@@ -75,11 +78,13 @@ print("Trajectory Generated: ", result.success)
 > [!Notes]  
 > **Documentations :**  
 > [MotionGenConfig](https://curobo.org/_api/curobo.wrap.reacher.motion_gen.html#curobo.wrap.reacher.motion_gen.MotionGenConfig)  
-> [MotionGenConfig.load_from_robot_config](https://curobo.org/_api/curobo.wrap.reacher.motion_gen.html#curobo.wrap.reacher.motion_gen.MotionGenConfig.load_from_robot_config)  
+> [MotionGenConfig.load_from_robot_config()](https://curobo.org/_api/curobo.wrap.reacher.motion_gen.html#curobo.wrap.reacher.motion_gen.MotionGenConfig.load_from_robot_config)  
 > [MotionGen](https://curobo.org/_api/curobo.wrap.reacher.motion_gen.html#curobo.wrap.reacher.motion_gen.MotionGen)
-> [MotionGen.plan_single](https://curobo.org/_api/curobo.wrap.reacher.motion_gen.html#curobo.wrap.reacher.motion_gen.MotionGen.plan_single)  
+> [MotionGen.plan_single()](https://curobo.org/_api/curobo.wrap.reacher.motion_gen.html#curobo.wrap.reacher.motion_gen.MotionGen.plan_single)  
 > [MotionGenResult](https://curobo.org/_api/curobo.wrap.reacher.motion_gen.html#curobo.wrap.reacher.motion_gen.MotionGenResult)  
-> [MotionGenResult.get_interpolated_plan](https://curobo.org/_api/curobo.wrap.reacher.motion_gen.html#curobo.wrap.reacher.motion_gen.MotionGenResult.get_interpolated_plan)  
+> [MotionGenResult.get_interpolated_plan()](https://curobo.org/_api/curobo.wrap.reacher.motion_gen.html#curobo.wrap.reacher.motion_gen.MotionGenResult.get_interpolated_plan)  
+> [Pose.from_list()](https://curobo.org/_api/curobo.types.math.html#curobo.types.math.Pose.from_list)  
+> [JointState.from_position()](https://curobo.org/_api/curobo.types.state.html#curobo.types.state.JointState.from_position)
 
 ## Example with ufactory xarm6 robot
 
