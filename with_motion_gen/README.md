@@ -70,38 +70,48 @@ For this example I created two classes :
 
 arguments
 
-def setup_scene()
+- ```def setup_scene()```
 
-- World()
-- add_reference_to_stage()
-- load_yaml()
-- ParallelGripper
-- World.scene.add()
-- SingleManipulator()
-- WorldConfig.from_dict()
-- WorldConfig()
-- World.scene.add_default_ground_plane()
-- USD_Helper.load_stage()
-- USD_Helper.add_world_to_stage()
-- Task_initialize()
+    - ```World()``` : 
+    - ```add_reference_to_stage()```
+    - ```load_yaml()```
+    - ```ParallelGripper```
+    - ```World.scene.add()```
+    - ```SingleManipulator()```
+    - ```WorldConfig.from_dict()```
+    - ```WorldConfig()```
+    - ```World.scene.add_default_ground_plane()```
+    - ```USD_Helper.load_stage()```
+    - ```USD_Helper.add_world_to_stage()```
+    - ```Task_initialize()```
 
-def config_motion_gen()
+- ```def config_motion_gen()```
 
-- TensorDeviceType()
-- MotionGenConfig.load_from_robot_config()
-- MotionGen()
-- MotionGenPlanConfig()
+    - ```TensorDeviceType()```
+    - ```MotionGenConfig.load_from_robot_config()```
+    - ```MotionGen()```
+    - ```MotionGenPlanConfig()```
 
-def update_world_obstacles()
+- ```def update_world_obstacles()```
 
-def plan()
+- ```def plan()```
 
-- Pose()
-- JointState()
-- result = self.motion_gen.plan_single(cu_js.unsqueeze(0), ik_goal, self.plan_config.clone())
+    - ```Pose()```
+    - ```JointState()```
+    - ```result = self.motion_gen.plan_single(cu_js.unsqueeze(0), ik_goal, self.plan_config.clone())```
 
-def forward()
-- ArticulationAction()
-- curobo.articulation_controller.apply_action(art_action) 
+- ```def forward()```
+    - ```ArticulationAction()```
+    - ```curobo.articulation_controller.apply_action(art_action)```
 
-## 
+## class CuroboPickPlaceTasks(BaseTask)
+
+
+
+
+## Main program
+
+
+
+
+### Main loop

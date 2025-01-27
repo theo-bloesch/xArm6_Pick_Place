@@ -6,7 +6,7 @@
 
 Once this modification has been made we can begin to simulate our robot. For that we need several file or code part. Here we decided to make all the code in two file but in the Isaac sim exemple the split the code in several file.
 
-We are going to make a simple pick and place task to verify that our robot works correctly. You can find the entire code [here](with_rmpflow/pick_place_test.py).
+We are going to make a simple pick and place task to verify that our robot works correctly. You can find the entire code [here](pick_place_test.py).
 
 First we need to define our robot description to pass it to the rmpflow motion generator.
 For that we create a folder rmp and inside it a file named ```robot_descriptor.yaml```. Make sure that the joint are the same that the one define in your **.usd**
@@ -149,9 +149,9 @@ The class inherits from tasks.PickPlace, meaning it extends the base pick-and-pl
     > - The ```asset_path``` is absolute, and the user must ensure the file exists at the specified location.
     > - You can choose the prim_path where you want the robot in the stage but be carefule it must be the same everywhere (```add_reference_to_stage(usd_path=asset_path, prim_path="/World/xarm6"```)
     - ```ParallelGripper```: Defines a parallel gripper with:
-        - ```end_effector_prim_path``` :The end-effector's path in the simulation (xarm6link_tcp).
-        - ```joint_opened_positions```: joint_prim_namesGripper joint names for control.
-        - ```joint_closed_positions``` : Joint positions for "opened" and "closed" states.
+        - ```end_effector_prim_path``` : The end-effector's path in the simulation (xarm6link_tcp).
+        - ```joint_opened_positions```: Joint positions for "opened" states.
+        - ```joint_closed_positions``` : Joint positions for "closed" states.
         - ```action_deltas```: Small movements applied to the gripper joints to perform opening/closing actions.
     - ```SingleManipulator```: Wraps the robot into a SingleManipulator object:
         - ```prim_path```: Path in the simulation for the robot.
@@ -216,16 +216,16 @@ class PickPlace(tasks.PickPlace):
 > [!Note]  
 > **Documentation :** [PickPlaceController](https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.manipulators/docs/index.html?highlight=pickplacecontroller#omni.isaac.manipulators.controllers.PickPlaceController)
 
-```class PickPlace(tasks.PickPlace)```
+```class PickPlaceController(manipulators_controllers.PickPlaceController)```: The class inherits from manipulators_controllers.PickPlaceController
 - ```__init__()```
-    - ```name```:
-    - ```gripper```:
-    - ```robot_articulation```:
-    - ```event_dt```:
+    - ```name```: A string representing the name of the controller.
+    - ```gripper```: An instance of ParallelGripper, which controls the robot's gripper for handling objects.
+    - ```robot_articulation```: Represents the robot's articulated structure (e.g., joints, links).
+    - ```event_dt```: A list defining timing for different stages of the pick-and-place sequence. If not provided, it defaults to a preset list.
     - ```manipulators_controllers.PickPlaceController.__init__()```:
         - ...
-        - ```cspace_controller```:
-        - ```end_effector_initial_height```:
+        - ```cspace_controller```: Configures a RMPFlowController instance for controlling the robot in its configuration space (e.g., joint angles).
+        - ```end_effector_initial_height```: Sets the default height of the robot's end effector before starting the pick-and-place process (e.g., 0.6 meters).
 
 ```python
 class PickPlaceController(manipulators_controllers.PickPlaceController):

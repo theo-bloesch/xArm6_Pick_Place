@@ -1,0 +1,144 @@
+
+Base Task
+
+class BaseTask(name: str, offset: Optional[numpy.ndarray] = None)
+
+This class provides a way to set up a task in a scene and modularize adding objects to stage, getting observations needed for the behavioral layer, calculating metrics needed about the task, calling certain things pre-stepping, creating multiple tasks at the same time and much more.
+
+    Checkout the required tutorials at https://docs.omniverse.nvidia.com/app_isaacsim/app_isaacsim/overview.html
+
+    Parameters
+
+            name (str) – needs to be unique if added to the World.
+
+            offset (Optional[np.ndarray], optional) – offset applied to all assets of the task.
+
+    calculate_metrics() → dict
+
+        [summary]
+
+        Raises
+
+            NotImplementedError – [description]
+
+    cleanup() → None
+
+        Called before calling a reset() on the world to removed temporary objects that were added during simulation for instance.
+
+    property device
+
+    get_description() → str
+
+        [summary]
+
+        Returns
+
+            [description]
+        Return type
+
+            str
+
+    get_observations() → dict
+
+        Returns current observations from the objects needed for the behavioral layer.
+
+        Raises
+
+            NotImplementedError – [description]
+        Returns
+
+            [description]
+        Return type
+
+            dict
+
+    get_params() → dict
+
+        Gets the parameters of the task.
+
+            This is defined differently for each task in order to access the task’s objects and values. Note that this is different from get_observations. Things like the robot name, block name..etc can be defined here for faster retrieval. should have the form of params_representation[“param_name”] = {“value”: param_value, “modifiable”: bool}
+
+        Raises
+
+            NotImplementedError – [description]
+        Returns
+
+            defined parameters of the task.
+        Return type
+
+            dict
+
+    get_task_objects() → dict
+
+        [summary]
+
+        Returns
+
+            [description]
+        Return type
+
+            dict
+
+    is_done() → bool
+
+        Returns True of the task is done.
+
+        Raises
+
+            NotImplementedError – [description]
+
+    property name: str
+
+        [summary]
+
+        Returns
+
+            [description]
+        Return type
+
+            str
+
+    post_reset() → None
+
+        Calls while doing a .reset() on the world.
+
+    pre_step(time_step_index: int, simulation_time: float) → None
+
+        called before stepping the physics simulation.
+
+        Parameters
+
+                time_step_index (int) – [description]
+
+                simulation_time (float) – [description]
+
+    property scene: omni.isaac.core.scenes.scene.Scene
+
+        Scene of the world
+
+        Returns
+
+            [description]
+        Return type
+
+            Scene
+
+    set_params(*args, **kwargs) → None
+
+        Changes the modifiable parameters of the task
+
+        Raises
+
+            NotImplementedError – [description]
+
+    set_up_scene(scene: omni.isaac.core.scenes.scene.Scene) → None
+
+        Adding assets to the stage as well as adding the encapsulated objects such as XFormPrim..etc
+
+            to the task_objects happens here.
+
+        Parameters
+
+            scene (Scene) – [description]
+
+
