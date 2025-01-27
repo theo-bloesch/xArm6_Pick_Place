@@ -2,7 +2,26 @@
 
 [Official Curobo documentation](https://curobo.org/get_started/2a_python_examples.html)
 
-To obtain collision-free trajectories, use MotionGen. An example is below,
+- ```world_config```: This dictionary defines the environment configuration for the simulation or planning  
+    - ```mesh``` : Specifies a mesh file for the base scene and its pose in the world
+        - ```pose``` : The position (x, y, z) and orientation (qw, qx, qy, qz) of the scene's mesh.
+        - ```file_path```: The file path for the 3D scene model
+    - ```cuboid```: Describes a cuboid object (e.g., a table) in the environment
+        - ```dims``` : The cuboid's dimensions (x, y, z).
+        - ```pose``` : The pose of the cuboid in the environment.
+- ```motion_gen_config```: Loads motion generation configuration from a robot-specific YAML.
+    - file (ur5e.yml), along 
+    - with the world_config. 
+    - ```interpolation_dt=0.01```
+Specifies the time interval for interpolating the motion plan.
+- ```motion_gen```:
+- ```motion_gen.warmup()```:
+- ```goal_pose```:
+- ```start_state```:
+- ```result```:
+- ```tra```:  
+
+To obtain collision-free trajectories, use ```MotionGen```. An example is below,
 ```python
 # Third Party
 import torch
@@ -52,6 +71,15 @@ result = motion_gen.plan_single(start_state, goal_pose, MotionGenPlanConfig(max_
 traj = result.get_interpolated_plan()  # result.interpolation_dt has the dt between timesteps
 print("Trajectory Generated: ", result.success)
 ```
+
+> [!Notes]  
+> **Documentations :**  
+> [MotionGenConfig](https://curobo.org/_api/curobo.wrap.reacher.motion_gen.html#curobo.wrap.reacher.motion_gen.MotionGenConfig)  
+> [MotionGenConfig.load_from_robot_config](https://curobo.org/_api/curobo.wrap.reacher.motion_gen.html#curobo.wrap.reacher.motion_gen.MotionGenConfig.load_from_robot_config)  
+> [MotionGen](https://curobo.org/_api/curobo.wrap.reacher.motion_gen.html#curobo.wrap.reacher.motion_gen.MotionGen)
+> [MotionGen.plan_single](https://curobo.org/_api/curobo.wrap.reacher.motion_gen.html#curobo.wrap.reacher.motion_gen.MotionGen.plan_single)  
+> [MotionGenResult](https://curobo.org/_api/curobo.wrap.reacher.motion_gen.html#curobo.wrap.reacher.motion_gen.MotionGenResult)  
+> [MotionGenResult.get_interpolated_plan](https://curobo.org/_api/curobo.wrap.reacher.motion_gen.html#curobo.wrap.reacher.motion_gen.MotionGenResult.get_interpolated_plan)  
 
 ## Example with ufactory xarm6 robot
 
