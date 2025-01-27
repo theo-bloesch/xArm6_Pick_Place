@@ -145,21 +145,23 @@ controller = og.Controller()
 class Target:
     def __init__(self):
         self.target_list = [
-            [0.3, 0.45, 0.2],
+            # [0.3, 0.45, 0.2],
+            [0.4,-0.2,0.035],
             [0.45, 0.35, 0.43],
-            [0.40, 0.40, 0.23],
+            # [0.40, 0.40, 0.23],
         ]
         self.target_orient = [
-            [0, 0.7071, 0, 0.7071],
+            # [0, 0.7071, 0, 0.7071],
             [0, 1, 0, 0.0],
-            [0, 0.7071, 0, 0.7071],
+            [0, 1, 0, 0.0],
+            # [0, 0.7071, 0, 0.7071],
         ]
         self.i = -1
 
     def next_target(self):
         self.i+=1
         if self.i >= len(self.target_list):
-            self.i = 1
+            self.i = 0
         return self.target_list[self.i]
     def next_orient(self):
         return self.target_orient[self.i]

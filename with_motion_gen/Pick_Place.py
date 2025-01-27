@@ -87,7 +87,7 @@ from omni.isaac.core.tasks import BaseTask
 from omni.isaac.manipulators import SingleManipulator
 from omni.isaac.manipulators.grippers import ParallelGripper
 from omni.isaac.core.utils.stage import add_reference_to_stage
-from omni.isaac.core.utils.numpy.rotations import euler_angles_to_quats
+from omni.isaac.core.utils.numpy.rotations import euler_angles_to_quats, quats_to_euler_angles
 from omni.isaac.motion_generation import ArticulationKinematicsSolver, LulaKinematicsSolver
 from omni.isaac.dynamic_control import _dynamic_control
 from omni.isaac.core.objects import DynamicCuboid, VisualCuboid
@@ -139,42 +139,12 @@ class CuroboController(BaseController):
         self.usd_help = UsdHelper()
         self.constraint_approach = constrain_grasp_approach
         
-    # def setup_scene(self):# Maybe simpler to use the SingleManipulator class from the simple stacking example
-    #     # Create a world with the robot and the object
-    #     self.my_world= World(stage_units_in_meters=1.0)
-    #     self.stage = self.my_world.stage
-        
-    #     ## Robot ##
-    #     self.robot_cfg = load_yaml("/home/theobloesch/xarm6_pick_and_place/xArm6Curobo/xArm6Curobo2.yaml")["robot_cfg"]
-    #     self.j_names = self.robot_cfg["kinematics"]["cspace"]["joint_names"]
-    #     self.default_config = self.robot_cfg["kinematics"]["cspace"]["retract_config"]
-    #     self.robot, self.robot_prim_path = add_robot_to_scene(self.robot_cfg, self.my_world)
-        
-    #     ## Scene  config ##
-    #     world_cfg_scene = WorldConfig.from_dict(
-    #         load_yaml("scene2.yml")
-    #     )
-
-    #     world_cfg1 = WorldConfig.from_dict(
-    #         load_yaml("scene2.yml")
-    #     ).get_mesh_world()
-        
-    #     for i in range(len(world_cfg1.mesh)):
-    #         world_cfg1.mesh[i].name += "_mesh"
-
-    #     self.world_cfg = WorldConfig(cuboid=world_cfg_scene.cuboid, mesh=world_cfg1.mesh)
-    #     self.my_world.scene.add_default_ground_plane()
-        
-    #     self.usd_help.load_stage(self.my_world.stage)
-    #     self.usd_help.add_world_to_stage(self.world_cfg, base_frame="/World")
-    
-        
-    def setup_scene_gripper(self):
+    def setup_scene(self):
         # Create a world with the robot and the object
         self.my_world= World(stage_units_in_meters=1.0)
         self.stage = self.my_world.stage
         
-        asset_path = "/home/theobloesch/Documents/xArm6Curobo/xarm6/xarm62.usd"
+        asset_path = "/home/theobloesch/xArm6_Pick_Place/with_rmpflow/xarm6_cfg_files/xarm6/xarm6.usd"
 
         add_reference_to_stage(usd_path=asset_path, prim_path="/World/UF_ROBOT")
         self.robot_prim_path = "/World/UF_ROBOT"
@@ -200,16 +170,6 @@ class CuroboController(BaseController):
         #that its out of the way of the joints we want to control when gripping an object for instance.
             
         ## Scene  config ##
-        ####test######
-        new_cuboid = Cuboid(
-        name="cube_1",
-        pose=[0.3, 0.3, 0.3, 0.0, 0.0, -1, 0.0],
-        dims=[0.05, 0.05, 0.07],
-        color=[0.8, 0.0, 0.0, 1.0],
-        )
-        
-        self.sph = new_cuboid.get_bounding_spheres(n_spheres=5)
-        
         # self.usd_help.add_cuboid_to_stage(new_cuboid,enable_physics = True)
         
         world_cfg_scene = WorldConfig.from_dict(
@@ -253,7 +213,7 @@ class CuroboController(BaseController):
 
     def motion_constraint(self):
         # add constraints to the motion gen here : linear movement along z axis of the end effector
-        self.pose_metric = PoseCostMetric.create_grasp_approach_metric(offset_position=0.2,tstep_fraction=0.8, linear_axis=2)
+        self.pose_metric = PoseCostMetric.create_grasp_approach_metric(offset_position=0.12,tstep_fraction=0.6, linear_axis=2)
         
     def config_motion_gen(self):
         
@@ -292,21 +252,19 @@ class CuroboController(BaseController):
             print("Contraint approach")
             self.motion_constraint()
         self.plan_config = MotionGenPlanConfig(
-            enable_graph=False,
-            max_attempts=10,
-            enable_graph_attempt=None,
+            enable_graph=True,
+            need_graph_success=True,
+            max_attempts=max_attempts,
+            enable_graph_attempt=5,
             enable_finetune_trajopt=True,
             partial_ik_opt=False,
             parallel_finetune=True,
             pose_cost_metric=self.pose_metric,
-            time_dilation_factor=None,
+            time_dilation_factor=0.8,
         )
 
         print("Curobo is Ready")
         
-        
-
-    
     def update_world_obstacles(self):
             print("Updating world, reading w.r.t.", self.robot_prim_path)
             obstacles = self.usd_help.get_obstacles_from_stage(
@@ -316,21 +274,17 @@ class CuroboController(BaseController):
                     self.robot_prim_path,
                     "/World/target",
                     "/World/defaultGroundPlane",
+                    # "World/random_cube",
                     "/curobo",
                     
                 ],
             ).get_collision_check_world()
-            print(len(obstacles.objects))
+            print("Obstacles read from stage",len(obstacles.objects))
 
             self.motion_gen.update_world(obstacles)
             print("Updated World")
             carb.log_info("Synced CuRobo world from stage.")
         
-
-        
-                
-        
- 
     def plan(self,goal_position, goal_orientation):
         # Generate a plan to reach the goal
         ik_goal = Pose(
@@ -426,7 +380,7 @@ class CuroboController(BaseController):
         self.get_current_eef_position()
         # print("Error in position", np.linalg.norm(goal_position - self.current_eef_position))
         # print("Error in orientation", 2*np.arccos(np.abs(np.dot(goal_orientation, self.current_eef_orientation))))
-        if (np.linalg.norm(goal_position - self.current_eef_position) < 1e-3 and ((2*np.arccos(np.abs(np.dot(goal_orientation, self.current_eef_orientation))))< 1e-2)):
+        if (np.linalg.norm(goal_position - self.current_eef_position) < 1e-2 and ((2*np.arccos(np.abs(np.dot(goal_orientation, self.current_eef_orientation))))< 1e-1)):
             return True
         else:
             return False
@@ -490,11 +444,8 @@ class CuroboPickPlaceTasks(BaseTask):
             position=np.array([0.4, -0.2, self.target_height/2]),
             scale=np.array([self.target_depth, self.target_width, self.target_height]),
             color=np.array([0, 1.0, 1.1]),
-            orientation=np.array([0,0,-1,0]),
+            orientation=np.array(euler_angles_to_quats([3.1415927 ,0,0 ])),
         ))
-        
-    
-        
         self.goal_position = self.fancy_cube.get_world_pose()[0]
         self.goal_position[2] = self.target_height-0.025
         self.goal_orientation = self.fancy_cube.get_world_pose()[1]
@@ -533,38 +484,6 @@ class CuroboPickPlaceTasks(BaseTask):
 
         }
         
-
-    # def set_gripper(self,my_world):
-    #     self.gripper = ParallelGripper(
-
-    #     #We chose the following values while inspecting the articulation
-
-    #     end_effector_prim_path="/World/UF_ROBOT/root_joint/xarm6link_eef",#xarm6link_eef
-
-    #     joint_prim_names=["xarm6drive_joint", "xarm6right_outer_knuckle_joint"],
-
-    #     joint_opened_positions=np.array([0, 0]),
-
-    #     joint_closed_positions=np.array([0.628, -0.628]),
-
-    #     action_deltas=np.array([-0.628, 0.628]),
-
-    #     )
-        
-    #     #define the manipulator
-
-    #     self.robot = my_world.scene.add(SingleManipulator(prim_path="/World/UF_ROBOT", name="UF_ROBOT",
-
-    #                                                     end_effector_prim_name="xarm6link_eef", gripper=self.gripper))
-
-    #     #set the default positions of the other gripper joints to be opened so
-    #     #that its out of the way of the joints we want to control when gripping an object for instance.
-    #     joints_default_positions = np.zeros(12)
-    #     joints_default_positions[7] = 0.628
-    #     joints_default_positions[8] = 0.628
-    #     self.robot.set_joints_default_state(positions=joints_default_positions)
-
-
 def visualize_sphere(motion_gen, cu_js, spheres=None):
     #########Affichage des spheres#################
     
@@ -598,7 +517,7 @@ def main():
     curobotask=CuroboPickPlaceTasks(name="pickplace")
     curobo = CuroboController(my_task=curobotask,constrain_grasp_approach=True)
 
-    curobo.setup_scene_gripper()
+    curobo.setup_scene()
     curobo.config_motion_gen()
     set_camera_view(eye=[1, -2, 1], target=[0.00, 0.00, 0.00], camera_prim_path="/OmniverseKit_Persp")
     art_action = None
@@ -606,41 +525,77 @@ def main():
     result = False
     curobo.reset()
     curobo.update_world_obstacles()
-
+    
+    target = cuboid.VisualCuboid(
+        "/World/target",
+        position=[0.43, 0.26, 0.45],
+        orientation=curobo.my_task.goal_orientation,
+        color=np.array([1.0, 0, 0]),
+        size=0.05,
+    )
+    cube_position=target.get_world_pose()[0]
+    cube_orientation=target.get_world_pose()[1]
     position = curobotask.goal_position
     orientation = curobotask.goal_orientation
+    res = False
+    
     while simulation_app.is_running():
         task_step+=1
-        curobo.my_world.step(render=True)
+        curobo.my_world.step(render=True)    
         if not curobo.my_world.is_playing():
             curobo.set_first_pose()
             curobo.update_world_obstacles()
             print("Robot type", type(curobo.robot))   
+            continue
+        
         curobotask.update_goal() 
+        
+        if task_step < 50:
+            continue
+        
+        
         curobo.get_current_eef_position()
         # Attention don't let the orientation of the cube when it's taken with the gripper
-        art_action = curobo.forward2(goal_position=position, goal_orientation=orientation)
+        
         print("The current position of the cube is", position)
         print("The current orientation of the cube is", orientation)
         print("The current position of the end effector is", curobo.current_eef_position)
         print("The current orientation of the end effector is", curobo.current_eef_orientation)
         # Attention don't let the orientation of the cube when it's taken with the gripper
-        if curobo.is_target_reached(goal_position=curobotask.goal_position, goal_orientation=curobotask.goal_orientation)==True:
+        result_1 = curobo.is_target_reached(goal_position=curobotask.goal_position, goal_orientation=curobotask.goal_orientation)
+        if result_1==True and curobo.cmd_plan==None:
+            result_1=False
             print("Target reached")
             curobo.close_gripper()
             print("closed gripper")
-            position = [0.4, -0.2, 0.30]
-            orientation = [0,0,1,0]
-        else:
-            position = curobotask.goal_position
-            orientation = curobotask.goal_orientation
-            
-            
-        if curobo.is_target_reached(goal_position=[0.4, -0.2, 0.30], goal_orientation=[0,0,1,0])==True:
+            position = curobotask.goal_position + np.array([0.0, 0.0, 0.3])
+            orientation = euler_angles_to_quats([3.1415927 ,0,0 ])#[0,0,1,0]
+            print("Euler angle to quats :", euler_angles_to_quats([3.1415927 ,0,0 ]))
+        result_2 = curobo.is_target_reached(goal_position=(curobotask.goal_position + np.array([0.0, 0.0, 0.3])), goal_orientation=euler_angles_to_quats([3.1415927 ,0,0 ]))
+        if result_2==True and  curobo.cmd_plan==None:
+            res=True
+            result_2=False
             print("Target 2 reached")
+            cube_position, cube_orientation = target.get_world_pose()
+            position = cube_position #[0.41, 0.3, 0.45]
+            orientation = cube_orientation
+        result_3 = curobo.is_target_reached(goal_position=cube_position, goal_orientation=cube_orientation)
+        if result_3==True and curobo.cmd_plan==None:
+            result_3=False
+            print("Target 3 reached")
             curobo.open_gripper()
-            position = curobotask.goal_position
-            orientation = curobotask.goal_orientation
+
+            
+        if res == True:
+            cube_position, cube_orientation = target.get_world_pose()
+            position = cube_position #[0.41, 0.3, 0.45]
+            orientation = cube_orientation
+            
+        # if curobo.is_target_reached(goal_position=[0.30, 0.30, 0.40], goal_orientation=[0,0,1,0])==True:
+        #     print("Target 2 reached")
+        #     curobo.open_gripper()
+        #     position = [0.30, 0.30, 0.035]
+        #     orientation = curobotask.goal_orientation
             
             
         print("The distance between the cube and the end effector is", np.linalg.norm(position - curobo.current_eef_position))
@@ -654,7 +609,7 @@ def main():
     #         position = [0.4, -0.2, 0.5]
 
 
-          
+        art_action = curobo.forward2(goal_position=position, goal_orientation=orientation)
         if art_action is not None:
             curobo.articulation_controller.apply_action(art_action)      
             

@@ -17,7 +17,7 @@
    #   pose: [-0.1, 0.3, 0, 0, 0, 0, 0.0] # x, y, z, qx, qy, qz, qw
     limit_3:
       dims: [0.80, 1.20, 0.008] # x, y, z
-      pose: [0.27, 0.26, 0.80, 0, 0, 0, 0.0] # x, y, z, qx, qy, qz, qw 
+      pose: [0.27, 0.26, 1.5, 0, 0, 0, 0.0] # x, y, z, qx, qy, qz, qw 
     table:
       dims: [0.80, 1.20, 0.008] # x, y, z
       pose: [0.27, 0.26, 0, 0, 0, 0, 0.0] # x, y, z, qx, qy, qz, qw
