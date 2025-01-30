@@ -303,12 +303,12 @@ class CuroboController(BaseController):
                 ignore_substring=[
                     self.robot_prim_path,
                     #"/World/target",
-                    # "/World/defaultGroundPlane",
-                    # "/World/random_cube",
-                    # "/curobo",
-                    # "/World/table",
-                    # "/World/obstacle/table",
-                    # "/World/obstacles/table_mesh",
+                   "/World/defaultGroundPlane",
+                    "/World/random_cube",
+                    "/curobo",
+                    "/World/table",
+                    "/World/obstacles/table",
+                    "/World/obstacles/table_mesh",
                     
                 ],
             ).get_collision_check_world()
@@ -317,6 +317,29 @@ class CuroboController(BaseController):
             self.motion_gen.update_world(obstacles)
             print("Updated World")
             carb.log_info("Synced CuRobo world from stage.")
+            
+    def update_world_obstacles_after_rising(self):
+        print("Updating world, reading w.r.t.", self.robot_prim_path)
+        obstacles = self.usd_help.get_obstacles_from_stage(
+            # only_paths="obstacles",
+            reference_prim_path=self.robot_prim_path,
+            ignore_substring=[
+                self.robot_prim_path,
+                #"/World/target",
+                #"/World/defaultGroundPlane",
+                "/World/random_cube",
+                #"/curobo",
+                #"/World/table",
+                #"/World/obstacles/table",
+                #"/World/obstacles/table_mesh",
+                
+            ],
+        ).get_collision_check_world()
+        print("Obstacles read from stage",len(obstacles.objects))
+
+        self.motion_gen.update_world(obstacles)
+        print("Updated World")
+        carb.log_info("Synced CuRobo world from stage.")
         
     def plan(self,goal_position, goal_orientation):
         # Generate a plan to reach the goal
@@ -400,9 +423,9 @@ class CuroboController(BaseController):
             [cube_name],
             link_name="attached_object",
             sphere_fit_type=SphereFitType.VOXEL_VOLUME_SAMPLE_SURFACE,
-            world_objects_pose_offset=Pose.from_list([0, 0, -0.18, 1, 0, 0, 0], self.tensor_args),
+            world_objects_pose_offset=Pose.from_list([0, 0, -0.16, 1, 0, 0, 0], self.tensor_args),
             remove_obstacles_from_world_config = True,
-            surface_sphere_radius = 0.01
+            surface_sphere_radius = 0.005
         )
     
     def detach_object(self):
@@ -552,7 +575,7 @@ def main():
         result_2 = curobo.is_target_reached(goal_position=(curobotask.cube_position + np.array([0.0, 0.0, 0.3500])), goal_orientation=euler_angles_to_quats([3.1415927 ,0,0 ]))
         if result_2==True:
             result_2=False
-            curobo.update_world_obstacles_before_taking()
+            curobo.update_world_obstacles_after_rising()
             print("Target 2 reached")
             position = [0.43, 0.26, 0.43]
             orientation = [0, 1, 0, 0.0]
@@ -561,10 +584,10 @@ def main():
             result_3=False
             print("Target 3 reached")
             #curobo.open_gripper()
-            position = [0.40, 0.40, 0.25]
+            position = [0.40, 0.40, 0.30]
             orientation = [0, 0.7071, 0, 0.7071]
             #target.set_world_pose(position=position, orientation=orientation)
-        result_4 = curobo.is_target_reached(goal_position=[0.40, 0.40, 0.25], goal_orientation=[0, 0.7071, 0, 0.7071])
+        result_4 = curobo.is_target_reached(goal_position=[0.40, 0.40, 0.30], goal_orientation=[0, 0.7071, 0, 0.7071])
         
         if result_4==True:
             result_4=False
@@ -578,22 +601,23 @@ def main():
         art_action = curobo.forward(goal_position=position, goal_orientation=orientation)
         if art_action is not None:
             curobo.articulation_controller.apply_action(art_action)      
-            
-        sim_js = curobo.robot.get_joints_state()    
-        sim_js_names = curobo.robot.dof_names
-        cu_js = JointState(
-        position=curobo.tensor_args.to_device(sim_js.positions),
-        velocity=curobo.tensor_args.to_device(sim_js.velocities),  # * 0.0,
-        acceleration=curobo.tensor_args.to_device(sim_js.velocities) * 0.0,
-        jerk=curobo.tensor_args.to_device(sim_js.velocities) * 0.0,
-        joint_names=sim_js_names,
-        )
+    ##################################Uncomment to show spheres##############################        
+        # sim_js = curobo.robot.get_joints_state()    
+        # sim_js_names = curobo.robot.dof_names
+        # cu_js = JointState(
+        # position=curobo.tensor_args.to_device(sim_js.positions),
+        # velocity=curobo.tensor_args.to_device(sim_js.velocities),  # * 0.0,
+        # acceleration=curobo.tensor_args.to_device(sim_js.velocities) * 0.0,
+        # jerk=curobo.tensor_args.to_device(sim_js.velocities) * 0.0,
+        # joint_names=sim_js_names,
+        # )
 
-        cu_js.velocity *= 0.0
-        cu_js.acceleration *= 0.0
+        # cu_js.velocity *= 0.0
+        # cu_js.acceleration *= 0.0
 
-        cu_js = cu_js.get_ordered_joint_state(curobo.motion_gen.kinematics.joint_names)
-        visualize_sphere(curobo.motion_gen, cu_js, spheres=None)         
+        # cu_js = cu_js.get_ordered_joint_state(curobo.motion_gen.kinematics.joint_names)
+        # visualize_sphere(curobo.motion_gen, cu_js, spheres=None)    
+    ##################################Uncomment to show spheres##############################       
     simulation_app.close()
              
         
