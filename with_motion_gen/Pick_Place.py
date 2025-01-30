@@ -190,7 +190,7 @@ class CuroboController(BaseController):
 
         self.world_cfg = WorldConfig(cuboid=world_cfg_scene.cuboid, mesh=world_cfg1.mesh)
         self.my_world.scene.add_default_ground_plane()
-        self.my_task.add_objet_to_pick(self.my_world)   
+        self.my_task.add_cube_to_pick(self.my_world)   
         self.usd_help.load_stage(self.my_world.stage)
         self.usd_help.add_world_to_stage(self.world_cfg, base_frame="/World")
             

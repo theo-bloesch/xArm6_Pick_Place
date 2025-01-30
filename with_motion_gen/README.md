@@ -110,8 +110,6 @@ print("Trajectory Generated: ", result.success)
 > [Pose.from_list()](https://curobo.org/_api/curobo.types.math.html#curobo.types.math.Pose.from_list)  
 > [JointState.from_position()](https://curobo.org/_api/curobo.types.state.html#curobo.types.state.JointState.from_position)
 
-## Example with ufactory xarm6 robot 
-
 ## Example with ufactory xarm6 robot (OOP : Based on the [simple stacking example](with_motion_gen/Exemple_curobo/simple_stacking.py))
 
 
@@ -128,21 +126,28 @@ For this example I created two classes :
 ## class CuroboController(BaseController)
 
 - ```def __init__()```:
-    - ```my_task```:
-    - ```name```
-    - ```usd_help```
-    - ```constrain_grasp_approach```
+    - ```my_task```: A task object (likely defines the pick-and-place task and objects involved).
+    - ```name``` : Name of the controller.
+    - ```usd_help```: Helper for managing USD files in the simulation.
+    - ```constrain_grasp_approach``` : If True, constrains the robot's grasping motion.
 
-- ```def setup_scene()```
+- ```def setup_scene()``` : 
+    - This method sets up the simulation scene by adding:
+        1.  **Robot** : Loads a robot from a USD file (xarm6.usd).Configures gripper parameters and initializes a SingleManipulator object.
+        2. **Scene and Obstacles**: Loads a scene configuration (scene2.yml) that defines obstacles (cuboids and meshes). Adds these obstacles to the simulation world as fixed objects.
+        3. **Ground Plane**: Adds a default ground plane for the simulation.
 
-    - ```World()``` : 
-    - ```add_reference_to_stage()```
+        4. **World Configuration**: Uses CuRobo's WorldConfig to manage the robot's environment, including meshes and cuboids.
+
+    - ```World(stage_units_in_meters=1.0)``` : Creates the simulation environment. ```stage_units_in_meters=1.0``` ensures the scene uses meters as the unit of measurement. ```stage```Refers to the USD (Universal Scene Description) stage that represents the 3D simulation world.
+    - ```add_reference_to_stage(usd_path=asset_path, prim_path="/World/UF_ROBOT")```: ```asset_path```: Specifies the file path to the USD file containing the robot's model (e.g., xArm6).
+```add_reference_to_stage```: Loads the robot model from the USD file into the simulation at the path /World/UF_ROBOT.
     - ```load_yaml()```
+    - ```WorldConfig.from_dict()```
+    - ```WorldConfig()```
     - ```ParallelGripper```
     - ```World.scene.add()```
     - ```SingleManipulator()```
-    - ```WorldConfig.from_dict()```
-    - ```WorldConfig()```
     - ```World.scene.add_default_ground_plane()```
     - ```USD_Helper.load_stage()```
     - ```USD_Helper.add_world_to_stage()```
@@ -175,7 +180,7 @@ For this example I created two classes :
 
 - ```def get_current_eef_position(self):```
 
-- ```is_target_reache```:
+- ```is_target_reached```:
 
 - ```def attach_object(self,cube_name):```
 
@@ -184,6 +189,16 @@ For this example I created two classes :
 - ```def close_gripper(self)```:
 
 - ```def open_gripper(self)```:
+
+> [!Note]  
+> **Documentations :**  
+> [World()]()  
+> [add_reference_to_stage()]()  
+> [load_yaml()]()  
+> [ParallelGripper()]()  
+> [World.scene.add()]()  
+
+
 
 
 
