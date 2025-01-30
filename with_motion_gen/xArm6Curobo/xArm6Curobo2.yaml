@@ -105,17 +105,8 @@ robot_cfg:
           "radius": 0.02
         - "center": [0.0, 0.036, 0.036]
           "radius": 0.02
-      attached_object:
-        - "center": [0.0, 0.0, 0.0]
-          "radius": -10.0
-        - "center": [0.0, 0.0, 0.0]
-          "radius": -10.0
-        - "center": [0.0, 0.0, 0.0]
-          "radius": -10.0
-        - "center": [0.0, 0.0, 0.0]
-          "radius": -10.0
     collision_sphere_buffer: 0.005 # float or Dict[str, float]
-    extra_collision_spheres: {"attached_object": 4}
+    extra_collision_spheres: {"attached_object": 25}
     self_collision_ignore: {
         "xarm6link1":["xarm6link2", "xarm6link3", "xarm6link4", "xarm6link5", "xarm6link6","xarm6xarm_gripper_base_link"],
         "xarm6link2":["xarm6link1", "xarm6link3", "xarm6link4", "xarm6link5", "xarm6link6","xarm6xarm_gripper_base_link"],

@@ -110,7 +110,9 @@ print("Trajectory Generated: ", result.success)
 > [Pose.from_list()](https://curobo.org/_api/curobo.types.math.html#curobo.types.math.Pose.from_list)  
 > [JointState.from_position()](https://curobo.org/_api/curobo.types.state.html#curobo.types.state.JointState.from_position)
 
-## Example with ufactory xarm6 robot
+## Example with ufactory xarm6 robot 
+
+## Example with ufactory xarm6 robot (OOP : Based on the [simple stacking example](with_motion_gen/Exemple_curobo/simple_stacking.py))
 
 
 For this example I created two classes :

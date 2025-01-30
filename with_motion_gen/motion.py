@@ -111,6 +111,7 @@ from omni.isaac.core.objects import cuboid, sphere
 
 ########### OV #################
 from omni.isaac.core.utils.types import ArticulationAction
+from omni.isaac.core.utils.viewports import set_camera_view
 
 # CuRobo
 # from curobo.wrap.reacher.ik_solver import IKSolver, IKSolverConfig
@@ -145,23 +146,25 @@ controller = og.Controller()
 class Target:
     def __init__(self):
         self.target_list = [
-            # [0.3, 0.45, 0.2],
-            [0.4,-0.2,0.035],
-            [0.45, 0.35, 0.43],
-            # [0.40, 0.40, 0.23],
+            [0.4,-0.2,0.025],#0 close
+            [0.43, 0.35, 0.43],#1 open
+            [0.25, 0.35, 0.43],#2 open
+            [0.43, 0.35, 0.425],#3 close
+            [0.45, 0.40, 0.30],#4 close
         ]
         self.target_orient = [
-            # [0, 0.7071, 0, 0.7071],
             [0, 1, 0, 0.0],
             [0, 1, 0, 0.0],
-            # [0, 0.7071, 0, 0.7071],
+            [0, 1, 0, 0.0],
+            [0, 1, 0, 0.0],
+            [0, 0.7071, 0, 0.7071],
         ]
         self.i = -1
 
     def next_target(self):
         self.i+=1
         if self.i >= len(self.target_list):
-            self.i = 0
+            self.i = 1
         return self.target_list[self.i]
     def next_orient(self):
         return self.target_orient[self.i]
@@ -169,7 +172,7 @@ class Target:
 
 
 def main():
-
+    set_camera_view(eye=[1, -2, 1], target=[0.00, 0.00, 0.00], camera_prim_path="/OmniverseKit_Persp")
     num_targets = 0
 
     targ = Target()
@@ -254,7 +257,7 @@ def main():
 
     print("Curobo is Ready")
 
-    add_extensions(simulation_app, None)
+    #add_extensions(simulation_app, None)
 
     # add constraints to the motion gen here : lineat movement along z axis of the end effector
     pose_metric = None
@@ -287,6 +290,21 @@ def main():
     next_cube_position = cube_position
     
     sph_list=None
+    
+    arm = None
+    try:
+        arm = XArmAPI("192.168.1.215", is_radian=True)
+        arm.motion_enable(enable=True)
+        arm.set_gripper_enable(1)
+        arm.set_mode(0)
+        arm.set_state(state=0)
+    except Exception as e:
+        print(e)
+        print("Failed to connect to xArm")
+
+    
+    if arm is not None:
+        arm.set_gripper_position(850)
     ## Simulation Update ##
     while simulation_app.is_running():
         my_world.step(render=True)
@@ -317,6 +335,13 @@ def main():
             robot._articulation_view.set_max_efforts(
                 values=np.array([5000 for i in range(len(idx_list))]), joint_indices=idx_list
             )
+            
+        joint_q = robot.get_joint_positions()
+        speed=50
+        if arm is not None:
+            arm.set_servo_angle(angle=joint_q[0:6],speed=speed,wait=False,radius=1.5)
+            
+            
         if step_index < 50:
             continue
         
@@ -468,6 +493,21 @@ def main():
                 print(f"Reached target new target: {next_target}")
                 print(f"Reached target new orientation: {cube_orientation}")
                 print(f"")
+                code = -1
+                if arm is not None:
+                
+                    if targ.i == 2 or targ.i == 3:
+                         
+                        arm.set_gripper_position(850, wait=True)
+                        while code!=0 :
+                            code = arm.get_gripper_position()[0]
+                            print("Wait gripper action")
+                    else:
+                        arm.set_gripper_position(0, wait=True)
+                        while code!=0 :
+                            code = arm.get_gripper_position()[0]
+                            print("Wait gripper action")
+                        
     simulation_app.close()
 
 
