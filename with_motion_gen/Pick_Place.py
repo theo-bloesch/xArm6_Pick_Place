@@ -281,10 +281,12 @@ class CuroboController(BaseController):
                 ignore_substring=[
                     self.robot_prim_path,
                     #"/World/target",
-                    #"/World/defaultGroundPlane",
+                    "/World/defaultGroundPlane",
                     #"/World/random_cube",
-                    #"/curobo",
-                    
+                    "/curobo",
+                    "/World/table",
+                    "/World/obstacles/table",
+                    "/World/obstacles/table_mesh",
                     
                 ],
             ).get_collision_check_world()
@@ -301,12 +303,12 @@ class CuroboController(BaseController):
                 ignore_substring=[
                     self.robot_prim_path,
                     #"/World/target",
-                    "/World/defaultGroundPlane",
-                    "/World/random_cube",
-                    "/curobo",
-                    "/World/table",
-                    "/World/obstacle/table",
-                    "/World/obstacles/table_mesh",
+                    # "/World/defaultGroundPlane",
+                    # "/World/random_cube",
+                    # "/curobo",
+                    # "/World/table",
+                    # "/World/obstacle/table",
+                    # "/World/obstacles/table_mesh",
                     
                 ],
             ).get_collision_check_world()
