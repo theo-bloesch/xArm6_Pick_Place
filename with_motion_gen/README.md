@@ -698,6 +698,8 @@ def main():
 ```
 ## Results
 
-<video controls src="../img/ExamplePickPlace.mp4" title="Title"></video>
+[![Watch the video](../img/ExamplePickPlace.png)](<video controls src="https://github.com/theo-bloesch/xArm6_Pick_Place/blob/main/img/ExamplePickPlace.mp4" title="img/ExamplePickPlace.mp4"></video>)
 
-Some improvement need to be made dddddd
+
+
+Some improvement need to be made 
