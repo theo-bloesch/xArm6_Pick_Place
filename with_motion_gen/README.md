@@ -698,7 +698,7 @@ def main():
 ```
 ## Results
 
-[![Watch the video](../img/ExamplePickPlace.png)](<video controls src="https://github.com/theo-bloesch/xArm6_Pick_Place/blob/main/img/ExamplePickPlace.mp4" title="img/ExamplePickPlace.mp4"></video>)
+[![Watch the video](https://github.com/theo-bloesch/xArm6_Pick_Place/blob/main/img/ExamplePickPlace.png)](https://github.com/theo-bloesch/xArm6_Pick_Place/blob/main/img/ExamplePickPlace.mp4)
 
 
 
