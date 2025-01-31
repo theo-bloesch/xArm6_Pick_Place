@@ -696,3 +696,6 @@ def main():
         visualize_sphere(curobo.motion_gen, cu_js, spheres=None)         
     simulation_app.close()
 ```
+## Results
+
+<video controls src="../img/ExamplePickPlace.mp4" title="Title"></video>
