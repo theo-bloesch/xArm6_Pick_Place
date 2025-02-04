@@ -16,8 +16,9 @@ except ImportError:
 
 
 # Third Party
+import time
 import torch
-
+torch.cuda.empty_cache()
 a = torch.zeros(
     4, device="cuda:0"
 )  # this is necessary to allow isaac sim to use this torch instance
@@ -81,7 +82,6 @@ from omni.isaac.core.utils.stage import get_stage_units
 from omni.isaac.core.utils.string import find_unique_string_name
 from omni.isaac.core.utils.types import ArticulationAction
 from omni.isaac.core.utils.viewports import set_camera_view
-from omni.isaac.franka import Franka
 from omni.isaac.core.objects import cuboid, sphere
 from omni.isaac.core.tasks import BaseTask
 from omni.isaac.manipulators import SingleManipulator
@@ -116,6 +116,7 @@ from curobo.geom.types import Cuboid
 from helper import add_extensions, add_robot_to_scene
 import numpy as np
 
+from xarm.wrapper import XArmAPI
 
 class CuroboController(BaseController):
     def __init__(
@@ -133,7 +134,7 @@ class CuroboController(BaseController):
         # Create a world with the robot and the object
         self.my_world= World(stage_units_in_meters=1.0)
         self.stage = self.my_world.stage
-        
+        self.pose_list = []
         asset_path = "/home/theobloesch/xArm6_Pick_Place/with_rmpflow/xarm6_cfg_files/xarm6/xarm6.usd"
 
         add_reference_to_stage(usd_path=asset_path, prim_path="/World/UF_ROBOT")
@@ -216,6 +217,8 @@ class CuroboController(BaseController):
         self.robot._articulation_view.set_max_efforts(
                 values=np.array([5000 for i in range(len(self.idx_list))]), joint_indices=self.idx_list
             )
+        self.cmd_idx = 0
+        self.pose_list = []
 
     def motion_constraint(self):
         # add constraints to the motion gen here : linear movement along z axis of the end effector
@@ -226,7 +229,7 @@ class CuroboController(BaseController):
         self.cmd_plan = None
         
         n_obstacle_cuboids = 30
-        n_obstacle_mesh = 100
+        n_obstacle_mesh = 30
         trajopt_dt = None
         optimize_dt = True
         trajopt_tsteps = 32
@@ -241,8 +244,8 @@ class CuroboController(BaseController):
             self.world_cfg,
             self.tensor_args,
             collision_checker_type=CollisionCheckerType.MESH,
-            num_trajopt_seeds=12,
-            num_graph_seeds=12,
+            num_trajopt_seeds=10,
+            num_graph_seeds=10,
             interpolation_dt=interpolation_dt,
             collision_cache={"obb": n_obstacle_cuboids, "mesh": n_obstacle_mesh},
             optimize_dt=optimize_dt,
@@ -252,7 +255,7 @@ class CuroboController(BaseController):
         )
         self.motion_gen = MotionGen(motion_gen_config)
         print("warming up...")
-        self.motion_gen.warmup(enable_graph=True, warmup_js_trajopt=False)
+        self.motion_gen.warmup(enable_graph=True, warmup_js_trajopt=True)
         self.pose_metric = None
         if self.constraint_approach == True :
             print("Contraint approach")
@@ -261,7 +264,7 @@ class CuroboController(BaseController):
             enable_graph=True,
             need_graph_success=True,
             max_attempts=max_attempts,
-            enable_graph_attempt=5,
+            enable_graph_attempt=10,
             enable_finetune_trajopt=True,
             partial_ik_opt=False,
             parallel_finetune=True,
@@ -373,6 +376,7 @@ class CuroboController(BaseController):
                 # print(cmd_plan)
                 self.idx_list = [i for i in range(len(self.j_names))]
                 self.cmd_plan = cmd_plan.get_ordered_joint_state(self.j_names)
+                self.pose_list = cmd_plan.position.tolist()
             else:
                 carb.log_warn("Plan did not converge to a solution.")
                 return None
@@ -423,7 +427,7 @@ class CuroboController(BaseController):
             [cube_name],
             link_name="attached_object",
             sphere_fit_type=SphereFitType.VOXEL_VOLUME_SAMPLE_SURFACE,
-            world_objects_pose_offset=Pose.from_list([0, 0, -0.16, 1, 0, 0, 0], self.tensor_args),
+            world_objects_pose_offset=Pose.from_list([0, 0, -0.17, 1, 0, 0, 0], self.tensor_args),
             remove_obstacles_from_world_config = True,
             surface_sphere_radius = 0.005
         )
@@ -458,7 +462,7 @@ class CuroboPickPlaceTasks(BaseTask):
      
     def add_cube_to_pick(self,world):
         
-        self.target_height = 0.05
+        self.target_height = 0.07
         self.target_width = 0.05
         self.target_depth = 0.05
         
@@ -527,6 +531,16 @@ def visualize_sphere(motion_gen, cu_js, spheres=None):
 
 
 def main():
+    arm = None
+    try:
+        arm = XArmAPI("192.168.1.215", is_radian=True)
+        arm.motion_enable(enable=True)
+        arm.set_gripper_enable(1)
+        arm.set_mode(6)
+        arm.set_state(state=0)
+    except Exception as e:
+        print(e)
+        print("Failed to connect to xArm")
     
     curobotask=CuroboPickPlaceTasks(name="pickplace")
     curobo = CuroboController(my_task=curobotask,constrain_grasp_approach=False)
@@ -550,6 +564,12 @@ def main():
             curobo.set_first_pose()
             curobo.update_world_obstacles_before_taking()
             print("Robot type", type(curobo.robot))   
+            curobo.detach_object()
+            curobo.open_gripper()
+            curobo.reset()
+            art_action = None
+            position = curobotask.cube_position
+            orientation = curobotask.cube_orientation
             continue
         
         curobotask.get_cube_pos_orient() 
@@ -577,48 +597,66 @@ def main():
             result_2=False
             curobo.update_world_obstacles_after_rising()
             print("Target 2 reached")
-            position = [0.43, 0.26, 0.43]
+            position = [0.43, 0.26, 0.41]
             orientation = [0, 1, 0, 0.0]
-        result_3 = curobo.is_target_reached(goal_position=[0.43, 0.26, 0.43], goal_orientation=[0, 1, 0, 0.0])
+        result_3 = curobo.is_target_reached(goal_position=[0.43, 0.26, 0.41], goal_orientation=[0, 1, 0, 0.0])
         if result_3==True:
             result_3=False
+            curobo.update_world_obstacles_after_rising()
             print("Target 3 reached")
             #curobo.open_gripper()
-            position = [0.40, 0.40, 0.30]
+            position = [0.40, 0.40, 0.25]
             orientation = [0, 0.7071, 0, 0.7071]
             #target.set_world_pose(position=position, orientation=orientation)
-        result_4 = curobo.is_target_reached(goal_position=[0.40, 0.40, 0.30], goal_orientation=[0, 0.7071, 0, 0.7071])
+        result_4 = curobo.is_target_reached(goal_position=[0.40, 0.40, 0.25], goal_orientation=[0, 0.7071, 0, 0.7071])
         
         if result_4==True:
             result_4=False
             print("Target 4 reached")
             #curobo.close_gripper()
             print("closed gripper")
-            position = [0.43, 0.26, 0.43]
+            curobo.update_world_obstacles_after_rising()
+            position = [0.43, 0.26, 0.41]
             orientation = [0, 1, 0, 0.0]
             #target.set_world_pose(position=position, orientation=orientation)
             
         art_action = curobo.forward(goal_position=position, goal_orientation=orientation)
+        check = False
         if art_action is not None:
-            curobo.articulation_controller.apply_action(art_action)      
-    ##################################Uncomment to show spheres##############################        
-        # sim_js = curobo.robot.get_joints_state()    
-        # sim_js_names = curobo.robot.dof_names
-        # cu_js = JointState(
-        # position=curobo.tensor_args.to_device(sim_js.positions),
-        # velocity=curobo.tensor_args.to_device(sim_js.velocities),  # * 0.0,
-        # acceleration=curobo.tensor_args.to_device(sim_js.velocities) * 0.0,
-        # jerk=curobo.tensor_args.to_device(sim_js.velocities) * 0.0,
-        # joint_names=sim_js_names,
-        # )
+            curobo.articulation_controller.apply_action(art_action)  
+            check = True
+        # if arm is not None and check:
+        #     if len(curobo.pose_list) > 0:
+        #         speed=10
+        #         i=0
+        #         #while i < len(curobo.pose_list):
+        #         for i in range(len(curobo.pose_list)):
+        #             print("Positon numero : ",i)
+        #             arm.set_servo_angle(angle=curobo.pose_list[i],speed=speed,wait=False) 
+        #             time.sleep(0.08)
+        #             i+=1
+        #         curobo.pose_list = []
+    
+    # #################################Uncomment to show spheres##############################        
+    #     sim_js = curobo.robot.get_joints_state()    
+    #     sim_js_names = curobo.robot.dof_names
+    #     cu_js = JointState(
+    #     position=curobo.tensor_args.to_device(sim_js.positions),
+    #     velocity=curobo.tensor_args.to_device(sim_js.velocities),  # * 0.0,
+    #     acceleration=curobo.tensor_args.to_device(sim_js.velocities) * 0.0,
+    #     jerk=curobo.tensor_args.to_device(sim_js.velocities) * 0.0,
+    #     joint_names=sim_js_names,
+    #     )
 
-        # cu_js.velocity *= 0.0
-        # cu_js.acceleration *= 0.0
+    #     cu_js.velocity *= 0.0
+    #     cu_js.acceleration *= 0.0
 
-        # cu_js = cu_js.get_ordered_joint_state(curobo.motion_gen.kinematics.joint_names)
-        # visualize_sphere(curobo.motion_gen, cu_js, spheres=None)    
-    ##################################Uncomment to show spheres##############################       
+    #     cu_js = cu_js.get_ordered_joint_state(curobo.motion_gen.kinematics.joint_names)
+    #     visualize_sphere(curobo.motion_gen, cu_js, spheres=None)    
+    # #################################Uncomment to show spheres##############################       
     simulation_app.close()
+    curobo.my_world.close()
+    
              
         
 if __name__ == "__main__":
