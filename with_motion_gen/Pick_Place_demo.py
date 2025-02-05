@@ -262,6 +262,7 @@ class CuroboController(BaseController):
             use_cuda_graph = True,
         )
         self.motion_gen = MotionGen(motion_gen_config)
+        self.motion_gen.update_batch_size(seeds=20,batch=2)
         print("warming up...")
         self.motion_gen.warmup(enable_graph=True, warmup_js_trajopt=False)
         self.pose_metric = None

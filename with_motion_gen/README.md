@@ -19,7 +19,7 @@ First we are going to explain the one of the Curobo example to generate a collis
     - **```Return type```**: 
         - ```MotionGenConfig``` : The loaded motion generation configuration object. 
 
-- ```motion_gen = MotionGen(motion_gen_config)```: Initializes the motion generator using a 
+- **```motion_gen = MotionGen(motion_gen_config)```**: Initializes the motion generator using a 
 ```MotionGenConfig``` object.
   - ```motion_gen_config``` : The motion generation configuration loaded earlier.
   - **```Return type```**:  
@@ -161,20 +161,23 @@ For this example I created two classes :
 
 - ```def set_first_pose(self)```:
     - ```self.my_world.reset()```: Reset the stage to its initial state and each object included in the Scene to its default state 
-    - ```self.robot._articulation_view.initialize()```
-    - ```self.articulation_controller = self.robot.get_articulation_controller()```
-    - ```self.idx_list = [self.robot.get_dof_index(x) for x in self.j_names]```
-    - ```self.robot.set_joint_positions(self.default_config, self.idx_list)```
-    - ```self.robot._articulation_view.set_max_efforts(values=np.array([5000 for i in range(len(self idx_list))]), joint_indices=self.idx_list)```
+    - ```self.robot._articulation_view.initialize()``` :
+    - ```self.articulation_controller = self.robot.get_articulation_controller()``` :
+    - ```self.idx_list = [self.robot.get_dof_index(x) for x in self.j_names]``` :
+    - ```self.robot.set_joint_positions(self.default_config, self.idx_list)``` :
+    - ```self.robot._articulation_view.set_max_efforts(values=np.array([5000 for i in range(len(self.idx_list))]), joint_indices=self.idx_list)``` :
 
 - ```def reset(self):```
 
 - ```def config_motion_gen()```
 
-    - ```TensorDeviceType()```
-    - ```MotionGenConfig.load_from_robot_config()```
-    - ```MotionGen()```
-    - ```MotionGenPlanConfig()```
+    - ```TensorDeviceType()``` :
+    - ```MotionGenConfig.load_from_robot_config()``` :
+    - ```MotionGen()``` :
+        - ```MotionGen.update_batch_size(seeds=20,batch=2)``` :
+    - ```MotionGen.warmup(enable_graph=True, warmup_js_trajopt=False)```:
+    - ```MotionGenPlanConfig()``` :
+    - ```MotionGenResult()``` :
 
 - ```def update_world_obstacles_before_taking()```
 
@@ -718,7 +721,7 @@ def main():
 ```
 ## Results
 
-[![Watch the video](https://github.com/theo-bloesch/xArm6_Pick_Place/blob/main/img/ExamplePickPlace.png)](https://github.com/theo-bloesch/xArm6_Pick_Place/blob/main/img/ExamplePickPlace.mp4)
+![Pick Place example with MotionGen of Curobo motion generation](../img/PickPlaceDemo.gif)
 
 
 
