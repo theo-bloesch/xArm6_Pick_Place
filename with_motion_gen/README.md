@@ -16,36 +16,36 @@ First we are going to explain the one of the Curobo example to generate a collis
     - ```world_config``` : The environment configuration dictionary 
     - ```interpolation_dt=0.01``` : Specifies the time interval for interpolating the motion plan.  
 
-    - **Return type**: 
+    - **```Return type```**: 
         - ```MotionGenConfig``` : The loaded motion generation configuration object. 
 
 - ```motion_gen = MotionGen(motion_gen_config)```: Initializes the motion generator using a 
 ```MotionGenConfig``` object.
   - ```motion_gen_config``` : The motion generation configuration loaded earlier.
-  - **Return type**:  
+  - **```Return type```**:  
     - ```MotionGen``` : The motion generator instance.
 - **```motion_gen.warmup()```**: Prepares the motion generator for motion planning by initializing internal data structures.
-    - **Return type**:
+    - **```Return type```**:
         - ```None``` : This method modifies internal state but doesn't return a value.
 - **```goal_pose = Pose.from_list()```**: Creates a Pose object from a list of 7 elements representing position and orientation in quaternion format.
-    - **Return type**:
+    - **```Return type```**:
         - ```Pose``` : A pose object encapsulating the position and orientation.
 - **```start_state = JointState.from_position```**: Creates a JointState object with specified joint positions and joint names.
     - ```torch.zeros(1, 6).cuda()```: A tensor representing the initial joint positions (1×6 matrix of zeros, moved to the GPU).
     - ```joint_names``` : A list of strings containing joint names.
-    - **Return type**:
+    - **```Return type```**:
         - ```JointState``` : An object containing the joint positions and names.
 - **```result = motion_gen.plan_single```**: Plans a motion from the given start state to the goal pose
     - ```start_state```: A JointState object representing the initial joint configuration.
     - ```goal_pose```: A Pose object representing the target pose.
     - ```MotionGenPlanConfig(max_attempts=1)```: Configuration for the motion planning (e.g., number of attempts).
-    - **Return type**:
+    - **```Return type```**:
         - ```MotionGenPlanResult``` : An object containing the result of the motion planning, including **success** status and **trajectory**.
 - **```traj = result.get_interpolated_plan()```**:  Retrieves the interpolated trajectory from the planning result.
-    - **Return type**:
+    - **```Return type```**:
         - A trajectory object (specific data type depends on cuRobo). Likely a time-indexed sequence of joint states.
 - **```result.success```**: Indicates whether the motion planning was successful.
-    - **Return type**:
+    - **```Return type```**:
         - ```bool``` : Returns True if the planning was successful, otherwise False.
 
 To obtain collision-free trajectories, use ```MotionGen```. An example is below,
