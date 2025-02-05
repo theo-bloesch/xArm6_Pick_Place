@@ -207,7 +207,7 @@ class CuroboController(BaseController):
     def set_first_pose(self):
         #set firt pose
         self.my_world.reset()
-        self.robot._articulation_view.initialize()
+        self.robot._articulation_view.initialize() #High level wrapper to deal with prims (one or many) that have the Root Articulation API applied and their attributes/properties
         self.articulation_controller = self.robot.get_articulation_controller()
         self.idx_list = [self.robot.get_dof_index(x) for x in self.j_names]
         self.robot.set_joint_positions(self.default_config, self.idx_list)
@@ -217,7 +217,7 @@ class CuroboController(BaseController):
         
     def reset(self):
         self.my_world.reset()
-        self.robot._articulation_view.initialize()
+        self.robot._articulation_view.initialize()#maybe not required because already added to world see : https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.core/docs/index.html#omni.isaac.core.articulations.Articulation.initialize
         self.articulation_controller = self.robot.get_articulation_controller()
         self.idx_list = [self.robot.get_dof_index(x) for x in self.j_names]
         self.robot.set_joint_positions(self.default_config, self.idx_list)
@@ -390,7 +390,7 @@ class CuroboController(BaseController):
         result = self.motion_gen.plan_single(cu_js.unsqueeze(0), ik_goal, self.plan_config.clone())
         return result
         
-    def forward(self,goal_position, goal_orientation):
+    def forward(self,goal_position, goal_orientation):##add arm to control real arm####################################################
         if self.cmd_plan is None:
             self.cmd_idx = 0
             self._step_idx = 0
@@ -425,19 +425,35 @@ class CuroboController(BaseController):
             art_action = None
         self._step_idx += 1
         return art_action
-    
+    def forward_real(self,goal_position, goal_orientation):
+        pass
     def get_current_eef_position(self):
         self.current_eef_position = self.robot.end_effector.get_world_pose()[0]
         self.current_eef_orientation = self.robot.end_effector.get_world_pose()[1]
         
     
-    def is_target_reached(self, goal_position, goal_orientation)->bool:
-        # Check if the target has been reached
-        self.get_current_eef_position()
-        if ((np.linalg.norm(goal_position - self.current_eef_position) < 0.01)and ((2*np.arccos(np.abs(np.dot(goal_orientation, self.current_eef_orientation))))< 0.01)):
-            return True
+    def is_target_reached(self, goal_position, goal_orientation,real_arm:XArmAPI=None)->bool:
+        if real_arm is None:
+            # Check if the target has been reached
+            self.get_current_eef_position()
+            if ((np.linalg.norm(goal_position - self.current_eef_position) < 0.01)and ((2*np.arccos(np.abs(np.dot(goal_orientation, self.current_eef_orientation))))< 0.01)):
+                return True
+            else:
+                return False
         else:
-            return False
+            xyz_rpy = np.array(real_arm.position) 
+            xyz = xyz_rpy[:3]/1000.0
+            print("Real arm xyz",xyz)
+            rpy = xyz_rpy[3:]
+            w_qx_qy_qz=euler_angles_to_quats(rpy)   
+            print("Real arm w_qx_qy_qz",w_qx_qy_qz)
+            #xyz_w_qx_qy_qz = np.append(xyz,w_qx_qy_qz)
+            if ((np.linalg.norm(goal_position - xyz) < 0.02)and ((2*np.arccos(np.abs(np.dot(goal_orientation, w_qx_qy_qz))))< 0.02)):
+                print("Real_Terget_reached")
+                return True
+            else:
+                return False
+            
 
     def attach_object(self,cube_name):
         # Attach the object to the robot and add the object to the motion generator
@@ -610,7 +626,7 @@ def main():
         if prog_step == 0:
             position = curobotask.cube_position
             orientation = curobotask.cube_orientation
-            if curobo.is_target_reached(goal_position=position, goal_orientation=orientation):
+            if curobo.is_target_reached(goal_position=position, goal_orientation=orientation,real_arm=arm):
                 curobo.close_gripper()
                 curobo.update_world_obstacles_before_taking()
                 curobo.attach_object(cube_name="/World/random_cube")
@@ -626,25 +642,25 @@ def main():
             # print("orientation",orientation)
             # print("eef_position",curobo.current_eef_position)
             # print("eef_orientation",curobo.current_eef_orientation)
-            if curobo.is_target_reached(goal_position=position, goal_orientation=orientation):
+            if curobo.is_target_reached(goal_position=position, goal_orientation=orientation,real_arm=arm):
                 curobo.update_world_obstacles_after_rising()
                 prog_step=2
         elif prog_step ==2:
             position = [0.43, 0.26, 0.41]
             orientation = [0, 1, 0, 0.0]
             
-            if curobo.is_target_reached(goal_position=position, goal_orientation=orientation):
+            if curobo.is_target_reached(goal_position=position, goal_orientation=orientation,real_arm=arm):
                 prog_step=3
         elif prog_step ==3:
             curobo.update_world_obstacles_after_rising()
             position = [0.40, 0.40, 0.25]
             orientation = [0, 0.7071, 0, 0.7071]
-            if curobo.is_target_reached(goal_position=position, goal_orientation=orientation):
+            if curobo.is_target_reached(goal_position=position, goal_orientation=orientation,real_arm=arm):
                 prog_step=4
         elif prog_step == 4:
             position = [0.43, 0.27, 0.42]
             orientation = [0, 1, 0, 0.0]
-            if curobo.is_target_reached(goal_position=position, goal_orientation=orientation):
+            if curobo.is_target_reached(goal_position=position, goal_orientation=orientation,real_arm=arm):
                 curobo.update_world_obstacles_after_detach()
                 curobo.open_gripper()
                 curobo.detach_object()
@@ -652,7 +668,7 @@ def main():
         elif prog_step == 5:
             position = [0.40, 0.40, 0.25]
             orientation = [0, 0.7071, 0, 0.7071]
-            if curobo.is_target_reached(goal_position=position, goal_orientation=orientation):
+            if curobo.is_target_reached(goal_position=position, goal_orientation=orientation,real_arm=arm):
                 curobotask.set_cube_pos_orient([0.43, 0.27, 0.41],[0,1,0,0])
                 curobotask.get_cube_grip_pos_orient()
                 prog_step=6
@@ -664,13 +680,13 @@ def main():
             if np.linalg.norm(position-curobo.current_eef_position)<0.02 and 2*np.arccos(np.abs(np.dot(orientation, curobo.current_eef_orientation)))<0.02:
                 prog_step=7
                 curobotask.get_cube_grip_pos_orient()
-            if curobo.is_target_reached(goal_position=position, goal_orientation=orientation):
+            if curobo.is_target_reached(goal_position=position, goal_orientation=orientation,real_arm=arm):
                 prog_step == 7
                 curobotask.get_cube_grip_pos_orient()
         elif prog_step == 7:
             position = curobotask.cube_position - np.array([0.0,0,0.01])
             orientation = [0,1,0,0]
-            if curobo.is_target_reached(goal_position=position, goal_orientation=orientation):
+            if curobo.is_target_reached(goal_position=position, goal_orientation=orientation,real_arm=arm):
                 curobo.close_gripper()
                 curobo.update_world_obstacles_before_taking()
                 curobo.attach_object(cube_name="/World/random_cube")
@@ -680,28 +696,31 @@ def main():
             position =(curobotask.cube_position + np.array([0.0,0,0.03]))
             orientation = [0,1,0,0]
             curobo.update_world_obstacles_after_taking()
-            if curobo.is_target_reached(goal_position=position, goal_orientation=orientation):
+            if curobo.is_target_reached(goal_position=position, goal_orientation=orientation,real_arm=arm):
                 prog_step = 3
                 
             
         print("*****************prog step : ",prog_step)
+        print("type of self.robot",type(curobo.robot))
             
         art_action = curobo.forward(goal_position=position, goal_orientation=orientation)
         check = False
         if art_action is not None:
-            curobo.articulation_controller.apply_action(art_action)  
+            curobo.articulation_controller.apply_action(art_action)  #See : https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.core/docs/index.html?highlight=apply_action#omni.isaac.core.controllers.ArticulationController.apply_action
             check = True
         if arm is not None and check:
             if len(curobo.pose_list) > 0:
-                speed=10
+                speed=5
                 i=0
                 #while i < len(curobo.pose_list):
                 for i in range(len(curobo.pose_list)):
                     print("Positon numero : ",i)
                     arm.set_servo_angle(angle=curobo.pose_list[i],speed=speed,wait=False) 
-                    time.sleep(0.08)
+                    time.sleep(0.1)
                     i+=1
                 curobo.pose_list = []
+            print("Real arm position : ",arm.position)
+              
     
     #################################Uncomment to show spheres##############################        
         sim_js = curobo.robot.get_joints_state()    

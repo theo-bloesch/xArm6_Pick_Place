@@ -16,7 +16,7 @@ from typing import Dict, List
 import numpy as np
 from matplotlib import cm
 from omni.isaac.core import World
-from isaacsim.core.api.materials.deformable_material import OmniPBR
+from omni.isaac.core.materials import OmniPBR
 from omni.isaac.core.objects import cuboid
 from omni.isaac.core.robots import Robot
 from pxr import UsdPhysics

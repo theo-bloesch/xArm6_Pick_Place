@@ -167,6 +167,13 @@ For this example I created two classes :
 - **```def set_first_pose(self)```:**
     - ```self.my_world.reset()```: Reset the stage to its initial state and each object included in the Scene to its default state 
     - ```self.robot._articulation_view.initialize()``` :
+        - ```_articulation_view```: High level wrapper to deal with prims (one or many) that have the Root Articulation API applied and their attributes/propertiesThis class wraps all matching articulations found at the regex provided at the prim_paths_expr argument  
+            - ***Note***  
+            Each prim will have xformOp:orient, xformOp:translate and xformOp:scale only post-init, unless it is a non-root articulation link.  
+            - ***Warning***  
+            The articulation view object must be initialized in order to be able to operate on it. See the initialize method for more details.
+        - ```initialize```: Create a physics simulation view if not passed and set other properties using the PhysX tensor API If the articulation view has been added to the world scene (e.g., world.scene.add(prims)), it will be automatically initialized when the world is reset (e.g., world.reset()).
+
     - ```self.articulation_controller = self.robot.get_articulation_controller()``` :
     - ```self.idx_list = [self.robot.get_dof_index(x) for x in self.j_names]``` :
     - ```self.robot.set_joint_positions(self.default_config, self.idx_list)``` :
@@ -224,9 +231,13 @@ For this example I created two classes :
 > [ParallelGripper()](https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.manipulators/docs/index.html?highlight=parallelgripper#parallel-gripper)   
 > [SingleManipulator()](https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.manipulators/docs/index.html?highlight=singlemanipulator#module-omni.isaac.manipulators.manipulators.SingleManipulator)  
 > [MotionGenPlanconfig](https://curobo.org/_api/curobo.wrap.reacher.motion_gen.html#curobo.wrap.reacher.motion_gen.MotionGenPlanConfig)  
-> [USD_Helper](https://curobo.org/_api/curobo.util.usd_helper.html#curobo.util.usd_helper.UsdHelper) 
-
-
+> [USD_Helper](https://curobo.org/_api/curobo.util.usd_helper.html#curobo.util.usd_helper.UsdHelper)   
+> [ArticulationView()](https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.core/docs/index.html#omni.isaac.core.articulations.ArticulationView)  
+> [ArticulationView().initialize()](https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.core/docs/index.html#omni.isaac.core.articulations.ArticulationView.initialize)  
+> [Articulation](https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.core/docs/index.html#articulation)
+> [Articulation.initialize](https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.core/docs/index.html#omni.isaac.core.articulations.Articulation.initialize)
+> [SingleManipulator.get]()
+> [ArticulationController](https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.core/docs/index.html?highlight=world%20get_articulation_controller#omni.isaac.core.controllers.ArticulationController)
 
 
 
