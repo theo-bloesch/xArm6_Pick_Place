@@ -96,7 +96,12 @@ start_state = JointState.from_position(
 
 result = motion_gen.plan_single(start_state, goal_pose, MotionGenPlanConfig(max_attempts=1))
 traj = result.get_interpolated_plan()  # result.interpolation_dt has the dt between timesteps
+# print(cmd_plan)
+
+traj = traj.get_ordered_joint_state(self.j_names)
+traj_list = traj.position.tolist()
 print("Trajectory Generated: ", result.success)
+print("List of joint angle to perform the trajectory", traj_list)
 ```
 
 > [!Note]  
@@ -125,13 +130,13 @@ For this example I created two classes :
 
 ## class CuroboController(BaseController)
 
-- ```def __init__()```:
+- **```def __init__()```:**
     - ```my_task```: A task object (likely defines the pick-and-place task and objects involved).
     - ```name``` : Name of the controller.
     - ```usd_help```: Helper for managing USD files in the simulation.
     - ```constrain_grasp_approach``` : If True, constrains the robot's grasping motion.
 
-- ```def setup_scene()``` : 
+- **```def setup_scene()``` :**
     - This method sets up the simulation scene by adding:
         1.  **Robot** : Loads a robot from a USD file (xarm6.usd).Configures gripper parameters and initializes a SingleManipulator object.
         2. **Scene and Obstacles**: Loads a scene configuration (scene2.yml) that defines obstacles (cuboids and meshes). Adds these obstacles to the simulation world as fixed objects.
@@ -159,7 +164,7 @@ For this example I created two classes :
     - ```USD_Helper.load_stage()``` : Curobo function to load the stage into **??????????**
     - ```USD_Helper.add_world_to_stage()``` : Curobo function **??????????**
 
-- ```def set_first_pose(self)```:
+- **```def set_first_pose(self)```:**
     - ```self.my_world.reset()```: Reset the stage to its initial state and each object included in the Scene to its default state 
     - ```self.robot._articulation_view.initialize()``` :
     - ```self.articulation_controller = self.robot.get_articulation_controller()``` :
@@ -167,9 +172,9 @@ For this example I created two classes :
     - ```self.robot.set_joint_positions(self.default_config, self.idx_list)``` :
     - ```self.robot._articulation_view.set_max_efforts(values=np.array([5000 for i in range(len(self.idx_list))]), joint_indices=self.idx_list)``` :
 
-- ```def reset(self):```
+- **```def reset(self)``` :**
 
-- ```def config_motion_gen()```
+- **```def config_motion_gen()``` :**
 
     - ```TensorDeviceType()``` :
     - ```MotionGenConfig.load_from_robot_config()``` :
@@ -179,31 +184,31 @@ For this example I created two classes :
     - ```MotionGenPlanConfig()``` :
     - ```MotionGenResult()``` :
 
-- ```def update_world_obstacles_before_taking()```
+- **```def update_world_obstacles_before_taking()``` :**
 
-- ```def update_world_obstacles_after_taking()```
+- **```def update_world_obstacles_after_taking()``` :**
 
-- ```def plan()```
+- **```def plan()``` :**
 
     - ```Pose()```
     - ```JointState()```
     - ```result = self.motion_gen.plan_single(cu_js.unsqueeze(0), ik_goal, self.plan_config.clone())```
 
-- ```def forward()```
+- **```def forward()``` :**
     - ```ArticulationAction()```
     - ```curobo.articulation_controller.apply_action(art_action)```
 
-- ```def get_current_eef_position(self):```
+- **```def get_current_eef_position(self):``` :**
 
-- ```is_target_reached```:
+- **```def is_target_reached```:**
 
-- ```def attach_object(self,cube_name):```
+- **```def attach_object(self,cube_name):```**
 
-- ```def detach_object(self)```:
+- **```def detach_object(self)```:**
 
-- ```def close_gripper(self)```:
+- **```def close_gripper(self)```:**
 
-- ```def open_gripper(self)```:
+- **```def open_gripper(self)```:**
 
 > [!Note]  
 > **Documentations :**                  
