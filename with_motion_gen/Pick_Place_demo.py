@@ -305,10 +305,6 @@ class CuroboController(BaseController):
                     "/World/obstacles/rack_rp",
                     "/World/obstacles/rack_tp",
                     "/World/obstacles/rack_stp",
-                    # "/World/obstacles/table_mesh",
-                    # "/World/obstacles/rack_rp_mesh",
-                    # "/World/obstacles/rack_tp_mesh",
-                    # "/World/obstacles/rack_stp_mesh",
                     
                 ],
             ).get_collision_check_world()
@@ -335,12 +331,6 @@ class CuroboController(BaseController):
                     "/World/obstacles/rack_rp",
                     "/World/obstacles/rack_tp",
                     "/World/obstacles/rack_stp",
-                    # "/World/obstacles/table_mesh",
-                    # "/World/obstacles/rack_rp_mesh",
-                    # "/World/obstacles/rack_tp_mesh",
-                    # "/World/obstacles/rack_stp_mesh",
-                    
-                    
                 ],
             ).get_collision_check_world()
             print("Obstacles read from stage",len(obstacles.objects))
@@ -356,14 +346,7 @@ class CuroboController(BaseController):
             reference_prim_path=self.robot_prim_path,
             ignore_substring=[
                 self.robot_prim_path,
-                #"/World/target",
-                #"/World/defaultGroundPlane",
                 "/World/random_cube",
-                #"/curobo",
-                #"/World/table",
-                #"/World/obstacles/table",
-                #"/World/obstacles/table_mesh",
-                
             ],
         ).get_collision_check_world()
         print("Obstacles read from stage",len(obstacles.objects))
@@ -379,14 +362,6 @@ class CuroboController(BaseController):
             reference_prim_path=self.robot_prim_path,
             ignore_substring=[
                 self.robot_prim_path,
-                #"/World/target",
-                #"/World/defaultGroundPlane",
-                #"/World/random_cube",
-                #"/curobo",
-                #"/World/table",
-                #"/World/obstacles/table",
-                #"/World/obstacles/table_mesh",
-                
             ],
         ).get_collision_check_world()
         print("Obstacles read from stage",len(obstacles.objects))
@@ -576,12 +551,6 @@ def visualize_sphere(motion_gen, cu_js, spheres=None):
                 spheres[si].set_world_pose(position=np.ravel(s.position))
                 spheres[si].set_radius(float(s.radius))
     #########Affichage des spheres#################
-
-
-
-
-
-
 def main():
     arm = None
     show_sphere = False
@@ -632,6 +601,7 @@ def main():
         
         
         if task_step < 50:
+            print("task_step",task_step)
             continue
 
         curobo.get_current_eef_position()

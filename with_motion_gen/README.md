@@ -139,21 +139,33 @@ For this example I created two classes :
 
         4. **World Configuration**: Uses CuRobo's WorldConfig to manage the robot's environment, including meshes and cuboids.
 
-    - ```World(stage_units_in_meters=1.0)``` : Creates the simulation environment. ```stage_units_in_meters=1.0``` ensures the scene uses meters as the unit of measurement. ```stage```Refers to the USD (Universal Scene Description) stage that represents the 3D simulation world.
-    - ```add_reference_to_stage(usd_path=asset_path, prim_path="/World/UF_ROBOT")```: ```asset_path```: Specifies the file path to the USD file containing the robot's model (e.g., xArm6).
-```add_reference_to_stage```: Loads the robot model from the USD file into the simulation at the path /World/UF_ROBOT.
-    - ```load_yaml()```
-    - ```WorldConfig.from_dict()```
-    - ```WorldConfig()```
-    - ```ParallelGripper```
-    - ```World.scene.add()```
-    - ```SingleManipulator()```
-    - ```World.scene.add_default_ground_plane()```
-    - ```USD_Helper.load_stage()```
-    - ```USD_Helper.add_world_to_stage()```
-    - ```Task_initialize()```
+    - ```World(stage_units_in_meters=1.0)``` : Creates the simulation environment.   -
+        - ```stage_units_in_meters=1.0``` ensures the scene uses meters as the unit of measurement. ```stage```Refers to the USD (Universal Scene Description) stage that represents the 3D simulation world.
+    - ```add_reference_to_stage(usd_path=asset_path, prim_path="/World/UF_ROBOT")```: Add USD reference to the opened stage at specified prim path.
+        - ```asset_path```: Specifies the file path to the USD file containing the robot's model (e.g., xArm6).
+        - ```prim_path```: Loads the robot model from the USD file into the simulation at the path ```/World/UF_ROBOT```.
 
-- ```def set_first_pose(self):```
+    - ```load_yaml()``` : Load the robot specification from a yaml file. In this case we load the robot configuration to use the motion generation from curobo and the world configuration.
+        - ``` self.j_names = self.robot_cfg["kinematics"]["cspace"]["joint_names"]``` : Store the joints name contained in the configuration file
+        - ``` self.default_config = self.robot_cfg["kinematics"]["cspace"]["retract_config"]``` : Save the "home" position contained in the configuration file.
+    - ```WorldConfig()```: Configures the robot's world (including collision objects) use in Curobo. 
+    - ```WorldConfig.from_dict()```: Creates a world configuration using a Python dictionary use in Curobo.
+    - ```ParallelGripper```: Provides high level functions to set/ get properties and actions of a parllel gripper (a gripper that has two fingers).
+    - ```World.scene.add()``` : ```World``` includes an instance of PhysicsContext which takes care of many physics related settings such as setting physics dt, solver type..etc. In addition to what is provided from SimulationContext, this class allows the user to add a task to the world and it contains a scene object. To control the default reset state of different objects easily, the object could be added to a Scene. Besides this, the object is bound to a short keyword that facilitates objects retrievals, like in a dict.
+        - ```scene()``` : Provide methods to add objects of interest in the stage to retrieve their information and set their reset default state in an easy way
+            - ```add()```: Add an object to the scene registry
+    - ```SingleManipulator()``` : Provides high level functions to set/ get properties and actions of a manipulator with a single end effector and optionally a gripper.
+    - ```World.scene.add_default_ground_plane()```: Create a ground plane (using the default asset for Isaac Sim environments) and add it to the scene registry
+    - ```USD_Helper.load_stage()``` : Curobo function to load the stage into **??????????**
+    - ```USD_Helper.add_world_to_stage()``` : Curobo function **??????????**
+
+- ```def set_first_pose(self)```:
+    - ```self.my_world.reset()```: Reset the stage to its initial state and each object included in the Scene to its default state 
+    - ```self.robot._articulation_view.initialize()```
+    - ```self.articulation_controller = self.robot.get_articulation_controller()```
+    - ```self.idx_list = [self.robot.get_dof_index(x) for x in self.j_names]```
+    - ```self.robot.set_joint_positions(self.default_config, self.idx_list)```
+    - ```self.robot._articulation_view.set_max_efforts(values=np.array([5000 for i in range(len(self idx_list))]), joint_indices=self.idx_list)```
 
 - ```def reset(self):```
 
@@ -191,12 +203,20 @@ For this example I created two classes :
 - ```def open_gripper(self)```:
 
 > [!Note]  
-> **Documentations :**  
-> [World()]()  
-> [add_reference_to_stage()]()  
-> [load_yaml()]()  
-> [ParallelGripper()]()  
-> [World.scene.add()]()  
+> **Documentations :**                  
+> - [World()](https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.core/docs/index.html?highlight=world#module-omni.isaac.core.world)
+>   - [scene()](https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.core/docs/index.html?highlight=world#scene)
+>       - [add()](https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.core/docs/index.html?highlight=world#omni.isaac.core.scenes.Scene.add)   
+>       -  [add_default_ground_plane()](https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.core/docs/index.html?highlight=world#omni.isaac.core.scenes.Scene.add_default_ground_plane)  
+>   - [reset()](https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.core/docs/index.html?highlight=world%20reset#omni.isaac.core.world.World.reset)
+> 
+> [add_reference_to_stage()](https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.core/docs/index.html?highlight=add_reference_to_stage#omni.isaac.core.utils.stage.add_reference_to_stage)  
+> [load_yaml]() 
+> [WorldConfig](https://curobo.org/_api/curobo.geom.types.html#curobo.geom.types.WorldConfig) 
+> [ParallelGripper()](https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.manipulators/docs/index.html?highlight=parallelgripper#parallel-gripper)   
+> [SingleManipulator()](https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.manipulators/docs/index.html?highlight=singlemanipulator#module-omni.isaac.manipulators.manipulators.SingleManipulator)  
+> [MotionGenPlanconfig](https://curobo.org/_api/curobo.wrap.reacher.motion_gen.html#curobo.wrap.reacher.motion_gen.MotionGenPlanConfig)  
+> [USD_Helper](https://curobo.org/_api/curobo.util.usd_helper.html#curobo.util.usd_helper.UsdHelper) 
 
 
 
