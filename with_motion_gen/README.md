@@ -16,7 +16,7 @@ First we are going to explain the one of the Curobo example to generate a collis
     - ```world_config``` : The environment configuration dictionary 
     - ```interpolation_dt=0.01``` : Specifies the time interval for interpolating the motion plan.  
 
-    - **Return type**: 
+    - Return type: 
         - ```MotionGenConfig``` : The loaded motion generation configuration object. 
 
 - ```motion_gen = MotionGen(motion_gen_config)```: Initializes the motion generator using a 
