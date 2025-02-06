@@ -450,6 +450,7 @@ class CuroboController(BaseController):
             else:
                 carb.log_warn("Plan did not converge to a solution.")
                 return None
+            
         
 
     def get_current_eef_position(self):
