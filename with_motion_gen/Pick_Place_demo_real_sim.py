@@ -750,17 +750,18 @@ def main():
                     print("Positon numero : ",i)
                     arm.set_servo_angle(angle=curobo.pose_list[i],speed=speed,wait=False) 
                     time.sleep(0.04)
-                    art_action = ArticulationAction(
-                        joint_positions=curobo.pose_list[i]+np.array([0,0,0,0,0,0]),
-                        joint_velocities=np.zeros(6),
-                        joint_indices=[0,1,2,3,4,5],
-                    )
-                    if art_action is not None:
-                        print("Applying action")
-                        curobo.my_world.step(render=True) 
-                        curobo.articulation_controller.apply_action(art_action)  #See : https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.core/docs/index.html?highlight=apply_action#omni.isaac.core.controllers.ArticulationController.apply_action
-                    else:
-                        print("No action") 
+                    if True:
+                        art_action = ArticulationAction(
+                            joint_positions=curobo.pose_list[i]+np.array([0,0,0,0,0,0]),
+                            joint_velocities=np.zeros(6),
+                            joint_indices=[0,1,2,3,4,5],
+                        )
+                        if art_action is not None:
+                            print("Applying action")
+                            curobo.my_world.step(render=True) 
+                            curobo.articulation_controller.apply_action(art_action)  #See : https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.core/docs/index.html?highlight=apply_action#omni.isaac.core.controllers.ArticulationController.apply_action
+                        else:
+                            print("No action") 
                     i+=1
                 curobo.pose_list = []
          
