@@ -15,7 +15,6 @@ except ImportError:
     pass
 
 import os
-
 #os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
 
 # Third Party
@@ -253,8 +252,8 @@ class CuroboController(BaseController):
             self.world_cfg,
             self.tensor_args,
             collision_checker_type=CollisionCheckerType.MESH,
-            num_trajopt_seeds=12,
-            num_graph_seeds=12,
+            num_trajopt_seeds=24,
+            num_graph_seeds=24,
             interpolation_dt=interpolation_dt,
             collision_cache={"obb": n_obstacle_cuboids, "mesh": n_obstacle_mesh},
             optimize_dt=optimize_dt,
@@ -282,8 +281,8 @@ class CuroboController(BaseController):
             parallel_finetune=True,
             pose_cost_metric=self.pose_metric,
             time_dilation_factor=0.5,
-            timeout = 15,
-            finetune_attempts = 10
+            timeout = 50,
+            finetune_attempts = 50
         )
         
         self.motion_gen_result = MotionGenResult()
@@ -373,7 +372,7 @@ class CuroboController(BaseController):
         print("Updated World")
         carb.log_info("Synced CuRobo world from stage.")
         
-    def plan(self,goal_position, goal_orientation):
+    def plan(self,goal_position, goal_orientation, arm:XArmAPI=None):
         # Generate a plan to reach the goal
         ik_goal = Pose(
             position=self.tensor_args.to_device(goal_position),
@@ -381,15 +380,24 @@ class CuroboController(BaseController):
         )
         sim_js = self.robot.get_joints_state()
         #sim_js_names = self.robot.dof_names
+        print("Arm angles",arm.angles)
+        # Ajouter 5 zeros au angles
+        angles = arm.angles + [0.0, 0.0, 0.0, 0.0, 0.0]
+        angles_array = torch.tensor(angles, dtype=torch.float32,device='cuda:0')
+        print("Arm angles",angles_array)
+        print("sim_js",self.tensor_args.to_device(sim_js.positions))
         cu_js = JointState(
-            position=self.tensor_args.to_device(sim_js.positions),
+            position=angles_array,
             velocity=self.tensor_args.to_device(sim_js.velocities) * 0.0,
             acceleration=self.tensor_args.to_device(sim_js.velocities) * 0.0,
             jerk=self.tensor_args.to_device(sim_js.velocities) * 0.0,
             joint_names=self.j_names,
         )
+        print("cu_js",cu_js)
         cu_js = cu_js.get_ordered_joint_state(self.motion_gen.kinematics.joint_names)##########################################Changer la position de depart ici
         # see : https://curobo.org/_api/curobo.wrap.reacher.motion_gen.html#curobo.wrap.reacher.motion_gen.MotionGen.plan_single
+        print(f"*********************cu_js : {cu_js.unsqueeze(0)} *********************************************")
+        
         result = self.motion_gen.plan_single(cu_js.unsqueeze(0), ik_goal, self.plan_config.clone())
         return result
         
@@ -428,17 +436,21 @@ class CuroboController(BaseController):
             art_action = None
         self._step_idx += 1
         return art_action
-    def forward_real(self,goal_position, goal_orientation, target_reached):
-        if self.pose_list == [] and ((not np.array_equal(goal_position, self.old_position)) or (not np.array_equal(goal_orientation, self.old_orientation))):
+    def forward_real(self,goal_position, goal_orientation,arm:XArmAPI=None):
+        if self.pose_list == []:
             self.old_position = goal_position
             self.old_orientation = goal_orientation
-            result = self.plan(goal_position, goal_orientation)            
+            result = self.plan(goal_position, goal_orientation, arm=arm)            
             succ = result.success.item()
             if succ:
                 print("Plan converged to a solution.")
                 cmd_plan = result.get_interpolated_plan()
                 self.cmd_plan = cmd_plan.get_ordered_joint_state(self.j_names)
                 self.pose_list = cmd_plan.position.tolist()
+            else:
+                carb.log_warn("Plan did not converge to a solution.")
+                return None
+        
 
     def get_current_eef_position(self):
         self.current_eef_position = self.robot.end_effector.get_world_pose()[0]
@@ -456,23 +468,32 @@ class CuroboController(BaseController):
         else:
             xyz_rpy = np.array(real_arm.position) 
             xyz = xyz_rpy[:3]/1000.0
-            print("Real arm xyz",xyz)
             rpy = xyz_rpy[3:]
-            w_qx_qy_qz=euler_angles_to_quats(rpy)   
+            w_qx_qy_qz=euler_angles_to_quats(rpy) 
+            print("Real arm xyz",xyz)
+            print("real_arm error in position",np.linalg.norm(goal_position - xyz))
+            print("real_arm error in orientation",2*np.arccos(np.abs(np.dot(goal_orientation, w_qx_qy_qz))))  
             print("Real arm w_qx_qy_qz",w_qx_qy_qz)
             #xyz_w_qx_qy_qz = np.append(xyz,w_qx_qy_qz)
-            if ((np.linalg.norm(goal_position - xyz) < 0.02)and ((2*np.arccos(np.abs(np.dot(goal_orientation, w_qx_qy_qz))))< 0.02)):
+            print((np.linalg.norm(goal_position - xyz) < 0.01))
+            print((2*np.arccos(np.abs(np.dot(goal_orientation, w_qx_qy_qz))))< 0.02)
+            if ((np.linalg.norm(goal_position - xyz) < 0.01) and ((2*np.arccos(np.abs(np.dot(goal_orientation, w_qx_qy_qz))))< 0.022)):
                 print("Real_Terget_reached")
                 return True
             else:
                 return False
             
 
-    def attach_object(self,cube_name):
+    def attach_object(self,cube_name,arm:XArmAPI=None):
         # Attach the object to the robot and add the object to the motion generator
         sim_js = self.robot.get_joints_state()
+        # Ajouter 5 zeros au angles
+        angles = arm.angles + [0.0, 0.0, 0.0, 0.0, 0.0]
+        angles_array = torch.tensor(angles, dtype=torch.float32,device='cuda:0')
+        print("Arm angles",angles_array)
+        print("sim_js",self.tensor_args.to_device(sim_js.positions))
         cu_js = JointState(
-            position=self.tensor_args.to_device(sim_js.positions),
+            position=angles_array,
             velocity=self.tensor_args.to_device(sim_js.velocities) * 0.0,
             acceleration=self.tensor_args.to_device(sim_js.velocities) * 0.0,
             jerk=self.tensor_args.to_device(sim_js.velocities) * 0.0,
@@ -640,9 +661,8 @@ def main():
             position = curobotask.cube_position
             orientation = curobotask.cube_orientation
             if curobo.is_target_reached(goal_position=position, goal_orientation=orientation,real_arm=arm):
-                curobo.close_gripper()
                 curobo.update_world_obstacles_before_taking()
-                curobo.attach_object(cube_name="/World/random_cube")
+                curobo.attach_object(cube_name="/World/random_cube",arm=arm)
                 prog_step=1
                 curobotask.get_cube_grip_pos_orient() 
         if prog_step ==1:
@@ -659,7 +679,7 @@ def main():
                 curobo.update_world_obstacles_after_rising()
                 prog_step=2
         if prog_step ==2:
-            position = [0.43, 0.26, 0.41]
+            position = [0.43, 0.26, 0.42]
             orientation = [0, 1, 0, 0.0]
             
             if curobo.is_target_reached(goal_position=position, goal_orientation=orientation,real_arm=arm):
@@ -687,22 +707,20 @@ def main():
                 prog_step=6
         if prog_step == 6:
             curobo.update_world_obstacles_after_detach()
+            curobo.open_gripper()
             position = (curobotask.cube_position)
             orientation = [0, 1, 0, 0.0]
             curobo.get_current_eef_position()
-            if np.linalg.norm(position-curobo.current_eef_position)<0.02 and 2*np.arccos(np.abs(np.dot(orientation, curobo.current_eef_orientation)))<0.02:
-                prog_step=7
-                curobotask.get_cube_grip_pos_orient()
+            print("Curobo target reached : ",curobo.is_target_reached(goal_position=position, goal_orientation=orientation,real_arm=arm))
             if curobo.is_target_reached(goal_position=position, goal_orientation=orientation,real_arm=arm):
-                prog_step == 7
+                prog_step = 7
                 curobotask.get_cube_grip_pos_orient()
         if prog_step == 7:
             position = curobotask.cube_position - np.array([0.0,0,0.01])
             orientation = [0,1,0,0]
             if curobo.is_target_reached(goal_position=position, goal_orientation=orientation,real_arm=arm):
-                curobo.close_gripper()
                 curobo.update_world_obstacles_before_taking()
-                curobo.attach_object(cube_name="/World/random_cube")
+                curobo.attach_object(cube_name="/World/random_cube",arm=arm)
                 prog_step = 8
                 curobotask.get_cube_grip_pos_orient()
         if prog_step == 8:
@@ -717,20 +735,20 @@ def main():
         print("type of self.robot",type(curobo.robot))
             
         #art_action = curobo.forward(goal_position=position, goal_orientation=orientation)
-        art_action = curobo.forward_real(goal_position=position, goal_orientation=orientation,target_reached=curobo.is_target_reached(goal_position=position, goal_orientation=orientation,real_arm=arm))
+        art_action = curobo.forward_real(goal_position=position, goal_orientation=orientation,arm=arm) #,target_reached=curobo.is_target_reached(goal_position=position, goal_orientation=orientation,real_arm=arm)
         check = True
         if art_action is not None:
             curobo.articulation_controller.apply_action(art_action)  #See : https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.core/docs/index.html?highlight=apply_action#omni.isaac.core.controllers.ArticulationController.apply_action
             check = True
         if arm is not None and check:
             if len(curobo.pose_list) > 0:
-                speed=5
+                speed=10
                 i=0
                 #while i < len(curobo.pose_list):
                 for i in range(len(curobo.pose_list)):
                     print("Positon numero : ",i)
                     arm.set_servo_angle(angle=curobo.pose_list[i],speed=speed,wait=False) 
-                    time.sleep(0.1)
+                    time.sleep(0.04)
                     i+=1
                 curobo.pose_list = []
             print("Real arm position : ",arm.position)

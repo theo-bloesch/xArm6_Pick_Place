@@ -21,7 +21,18 @@ import os
 # Third Party
 import time
 import torch
+# Set environment variable to avoid fragmentation
+os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
+
+
+print("PyTorch GPU disponible :", torch.cuda.is_available())
+print("Nombre de GPU :", torch.cuda.device_count())
+print("Nom du GPU :", torch.cuda.get_device_name(0))
+print("Mémoire disponible :", torch.cuda.mem_get_info(0))
+
 torch.cuda.empty_cache()
+torch.cuda.set_per_process_memory_fraction(0.5, device=0) 
+torch.cuda.empty_cache()  # Vide le cache
 a = torch.zeros(
     4, device="cuda:0"
 )  # this is necessary to allow isaac sim to use this torch instance
@@ -241,7 +252,7 @@ class CuroboController(BaseController):
         optimize_dt = True
         trajopt_tsteps = 32
         trim_steps = None
-        max_attempts = 50
+        max_attempts = 20
         interpolation_dt = 0.05
         
         self.tensor_args = TensorDeviceType()
@@ -274,14 +285,14 @@ class CuroboController(BaseController):
             need_graph_success=True,
             enable_opt = True,
             max_attempts=max_attempts,
-            enable_graph_attempt=50,
+            enable_graph_attempt=20,
             enable_finetune_trajopt=True,
             partial_ik_opt=False,
             parallel_finetune=True,
             pose_cost_metric=self.pose_metric,
             time_dilation_factor=0.5,
             timeout = 15,
-            finetune_attempts = 10
+            finetune_attempts = 20
         )
         
         self.motion_gen_result = MotionGenResult()
@@ -386,6 +397,7 @@ class CuroboController(BaseController):
             jerk=self.tensor_args.to_device(sim_js.velocities) * 0.0,
             joint_names=self.j_names,
         )
+        print("* * * * * * * * * * * * * * * ** sim_js",self.tensor_args.to_device(sim_js.positions))
         cu_js = cu_js.get_ordered_joint_state(self.motion_gen.kinematics.joint_names)
         result = self.motion_gen.plan_single(cu_js.unsqueeze(0), ik_goal, self.plan_config.clone())
         return result
@@ -448,7 +460,7 @@ class CuroboController(BaseController):
             w_qx_qy_qz=euler_angles_to_quats(rpy)   
             print("Real arm w_qx_qy_qz",w_qx_qy_qz)
             #xyz_w_qx_qy_qz = np.append(xyz,w_qx_qy_qz)
-            if ((np.linalg.norm(goal_position - xyz) < 0.02)and ((2*np.arccos(np.abs(np.dot(goal_orientation, w_qx_qy_qz))))< 0.02)):
+            if ((np.linalg.norm(goal_position - xyz) < 0.02)and ((2*np.arccos(np.abs(np.dot(goal_orientation, w_qx_qy_qz))))< 0.022)):
                 print("Real_Terget_reached")
                 return True
             else:
@@ -548,6 +560,14 @@ class CuroboPickPlaceTasks(BaseTask):
             "goal_position": self._goal_position
         }
         
+        
+def reduce_memory_usage():
+    # Clear GPU cache
+    torch.cuda.empty_cache()
+    # Reduce batch sizes or other memory-intensive operations
+    # ...
+
+        
 def visualize_sphere(motion_gen, cu_js, spheres=None):
     #########Affichage des spheres#################
     sph_list = motion_gen.kinematics.get_robot_as_spheres(cu_js.position)
@@ -600,6 +620,7 @@ def main():
     curobo.open_gripper() 
     with_cube = False
     prog_step =0
+    reduce_memory_usage()
     while simulation_app.is_running():
         task_step+=1
         curobo.my_world.step(render=True)    
@@ -617,7 +638,7 @@ def main():
         
         
         
-        if task_step < 50:
+        if task_step < 5:
             print("task_step",task_step)
             continue
 
@@ -681,7 +702,7 @@ def main():
                 prog_step=7
                 curobotask.get_cube_grip_pos_orient()
             if curobo.is_target_reached(goal_position=position, goal_orientation=orientation,real_arm=arm):
-                prog_step == 7
+                prog_step = 7
                 curobotask.get_cube_grip_pos_orient()
         elif prog_step == 7:
             position = curobotask.cube_position - np.array([0.0,0,0.01])
