@@ -174,48 +174,50 @@ For this example I created two classes :
             The articulation view object must be initialized in order to be able to operate on it. See the initialize method for more details.
         - ```initialize```: Create a physics simulation view if not passed and set other properties using the PhysX tensor API If the articulation view has been added to the world scene (e.g., world.scene.add(prims)), it will be automatically initialized when the world is reset (e.g., world.reset()).
 
-    - ```self.articulation_controller = self.robot.get_articulation_controller()``` :
-    - ```self.idx_list = [self.robot.get_dof_index(x) for x in self.j_names]``` :
-    - ```self.robot.set_joint_positions(self.default_config, self.idx_list)``` :
-    - ```self.robot._articulation_view.set_max_efforts(values=np.array([5000 for i in range(len(self.idx_list))]), joint_indices=self.idx_list)``` :
+    - ```self.articulation_controller = self.robot.get_articulation_controller()``` :Retrieves the articulation controller of the robot. The articulation controller is responsible for executing commands such as setting joint positions, velocities, and efforts.
+    - ```self.idx_list = [self.robot.get_dof_index(x) for x in self.j_names]``` :Creates a list of indices corresponding to the robot's joints (self.j_names).
+    - ```self.robot.set_joint_positions(self.default_config, self.idx_list)``` : Sets the robot's joints to their default positions.
+    - ```self.robot._articulation_view.set_max_efforts(values=np.array([5000 for i in range(len(self.idx_list))]), joint_indices=self.idx_list)``` : 
+Limits the maximum effort (torque) applied to each joint.  
 
 - **```def reset(self)``` :**
 
 - **```def config_motion_gen()``` :**
 
-    - ```TensorDeviceType()``` :
-    - ```MotionGenConfig.load_from_robot_config()``` :
-    - ```MotionGen()``` :
-        - ```MotionGen.update_batch_size(seeds=20,batch=2)``` :
-    - ```MotionGen.warmup(enable_graph=True, warmup_js_trajopt=False)```:
-    - ```MotionGenPlanConfig()``` :
-    - ```MotionGenResult()``` :
+    - ```TensorDeviceType()``` : Determines the device type (CPU/GPU) for tensor computations. (type='cuda', index=0)
+    - ```MotionGenConfig.load_from_robot_config()``` : Loads motion generation configurations from the robot's settings. Retrieves robot-specific parameters (e.g., joint limits, velocity constraints, collision settings) and ensures that motion generation aligns with the robot's physical constraints.
+    - ```MotionGen()``` : Initializes the motion generation module.
+        - ```MotionGen.update_batch_size(seeds=20,batch=2)``` : Configures how many trajectory samples are generated and processed at a time
+    - ```MotionGen.warmup(enable_graph=True, warmup_js_trajopt=False)```: : Prepares the motion planner for execution.
+    - ```MotionGenPlanConfig()``` : Creates a configuration object for motion planning.
+    - ```MotionGenResult()``` : Stores the results of motion generation.
 
-- **```def update_world_obstacles_before_taking()``` :**
+- **```def update_world_obstacles_before_taking()``` :**    Updates the world model before the robot picks an object. Adjusts the scene representation, ensuring the planner knows about obstacles. Helps avoid collisions during grasping.
 
-- **```def update_world_obstacles_after_taking()``` :**
+- **```def update_world_obstacles_after_taking()``` :** Purpose: Updates the world model after the robot has taken an object. Ensures the planner accounts for the new object attached to the gripper. Updates the collision model accordingly.
 
-- **```def plan()``` :**
-
-    - ```Pose()```
-    - ```JointState()```
-    - ```result = self.motion_gen.plan_single(cu_js.unsqueeze(0), ik_goal, self.plan_config.clone())```
+- **```def plan()``` :**  
+    - ```Pose()``` : Represents a desired end-effector position.
+    - ```JointState()``` : Represents the current joint angles.
+    - ```result = self.motion_gen.plan_single(cu_js.unsqueeze(0), ik_goal, self.plan_config.clone())``` : Plans a single trajectory from the current joint state (cu_js) to the inverse kinematics (IK) goal (ik_goal). Uses self.plan_config.clone() to ensure that modifications to the planning config do not affect future plans.
 
 - **```def forward()``` :**
-    - ```ArticulationAction()```
-    - ```curobo.articulation_controller.apply_action(art_action)```
+    - ```ArticulationAction()```: Represents an action to be applied to an articulated robot.
+    - ```curobo.articulation_controller.apply_action(art_action)```: Applies the computed action to the robot. Moves the robot according to the planned trajectory.
 
-- **```def get_current_eef_position(self):``` :**
+- **```def get_current_eef_position(self):``` :** Returns the current position of the end-effector (EEF).
 
-- **```def is_target_reached```:**
+- **```def is_target_reached```:**  Checks whether the robot has reached its target.
 
-- **```def attach_object(self,cube_name):```**
 
-- **```def detach_object(self)```:**
+- **```def attach_object(self,cube_name):```** Virtually attaches an object (e.g., cube_name) to the robot's gripper.
 
-- **```def close_gripper(self)```:**
+- **```def detach_object(self)```:** Detaches the object from the gripper.
 
-- **```def open_gripper(self)```:**
+- **```def close_gripper(self)```:** Closes the gripper to grasp an object.
+
+
+- **```def open_gripper(self)```:** Allows objects to be placed or dropped.
 
 > [!Note]  
 > **Documentations :**                  
@@ -234,12 +236,15 @@ For this example I created two classes :
 > [USD_Helper](https://curobo.org/_api/curobo.util.usd_helper.html#curobo.util.usd_helper.UsdHelper)   
 > [ArticulationView()](https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.core/docs/index.html#omni.isaac.core.articulations.ArticulationView)  
 > [ArticulationView().initialize()](https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.core/docs/index.html#omni.isaac.core.articulations.ArticulationView.initialize)  
-> [Articulation](https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.core/docs/index.html#articulation)
-> [Articulation.initialize](https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.core/docs/index.html#omni.isaac.core.articulations.Articulation.initialize)
-> [SingleManipulator.get]()
-> [ArticulationController](https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.core/docs/index.html?highlight=world%20get_articulation_controller#omni.isaac.core.controllers.ArticulationController)
-
-
+> [Articulation](https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.core/docs/index.html#articulation)  
+> [Articulation.initialize](https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.core/docs/index.html#omni.isaac.core.articulations.Articulation.initialize)  
+> [get_articulation_controller()](https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.core/docs/index.html?highlight=get_articulation_controller#omni.isaac.core.robots.Robot.get_articulation_controller)  
+> [ArticulationController](https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.core/docs/index.html?highlight=world%20get_articulation_controller#omni.isaac.core.controllers.ArticulationController)   
+> [set_joint_positions](https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.core/docs/index.html?highlight=set_joint_positions#omni.isaac.core.articulations.Articulation.set_joint_positions)  
+> [MotionGenConfig()](https://curobo.org/_api/curobo.wrap.reacher.motion_gen.html#curobo.wrap.reacher.motion_gen.MotionGenConfig)  
+> [MotionGen()](https://curobo.org/_api/curobo.wrap.reacher.motion_gen.html#curobo.wrap.reacher.motion_gen.MotionGen)  
+> [MotionGenPlanConfig()]()  
+> [MotionGenResult()](https://curobo.org/_api/curobo.wrap.reacher.motion_gen.html#curobo.wrap.reacher.motion_gen.MotionGenResult)  
 
 ```python
 class CuroboController(BaseController):
@@ -634,7 +639,48 @@ def visualize_sphere(motion_gen, cu_js, spheres=None):
 
 ## Main program
 
+### xArm6 Python SDK
 
+```python
+arm = None
+show_sphere = False
+try:
+    arm = XArmAPI("192.168.1.215", is_radian=True)
+    arm.motion_enable(enable=True)
+    arm.set_gripper_enable(1)
+    arm.set_mode(6)
+    arm.set_state(state=0)
+except Exception as e:
+    print(e)
+    print("Failed to connect to xArm")
+
+```
+
+```python
+if arm is not None:
+    if len(curobo.pose_list) > 0:
+        speed=10
+        i=0
+        #while i < len(curobo.pose_list):
+        for i in range(len(curobo.pose_list)):
+            print("Positon numero : ",i)
+            arm.set_servo_angle(angle=curobo.pose_list[i],speed=speed,wait=False) 
+            time.sleep(0.04)
+            if True:
+                art_action = ArticulationAction(
+                    joint_positions=curobo.pose_list[i]+np.array([0,0,0,0,0,0]),
+                    joint_velocities=np.zeros(6),
+                    joint_indices=[0,1,2,3,4,5],
+                )
+                if art_action is not None:
+                    print("Applying action")
+                    curobo.my_world.step(render=True) 
+                    curobo.articulation_controller.apply_action(art_action)  #See : https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.core/docs/index.html?highlight=apply_action#omni.isaac.core.controllers.ArticulationController.apply_action
+                else:
+                    print("No action") 
+            i+=1
+        curobo.pose_list = []
+```
 
 
 ### Main loop
@@ -741,4 +787,4 @@ def main():
 
 
 
-Some improvement need to be made 
+Some improvement need to be made in order that our classes are easier and simpler to use. 
