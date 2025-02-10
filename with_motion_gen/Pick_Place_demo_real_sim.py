@@ -282,7 +282,7 @@ class CuroboController(BaseController):
             pose_cost_metric=self.pose_metric,
             time_dilation_factor=0.5,
             timeout = 50,
-            finetune_attempts = 50
+            finetune_attempts = 20
         )
         
         self.motion_gen_result = MotionGenResult()

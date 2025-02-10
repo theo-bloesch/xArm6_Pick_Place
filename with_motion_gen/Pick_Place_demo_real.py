@@ -755,7 +755,8 @@ def main():
             print("Real arm position : ",arm.position)
               
     
-    #################################Uncomment to show spheres##############################        
+    #################################Uncomment to show spheres##############################    
+    if False:    
         sim_js = curobo.robot.get_joints_state()    
         sim_js_names = curobo.robot.dof_names
         cu_js = JointState(
@@ -770,8 +771,8 @@ def main():
         cu_js.acceleration *= 0.0
 
         cu_js = cu_js.get_ordered_joint_state(curobo.motion_gen.kinematics.joint_names)
-        if False:
-            visualize_sphere(curobo.motion_gen, cu_js, spheres=None)    
+        
+        visualize_sphere(curobo.motion_gen, cu_js, spheres=None)    
     #################################Uncomment to show spheres##############################       
     simulation_app.close()
              
