@@ -33,6 +33,7 @@ np.set_printoptions(suppress=True)
 
 # Standard Library
 import argparse
+from abc import ABC,abstractmethod
 
 ## import curobo:
 
@@ -121,8 +122,72 @@ from curobo.wrap.reacher.motion_gen import (
 from curobo.geom.types import Cuboid
 from helper import add_extensions, add_robot_to_scene
 import numpy as np
-
 from xarm.wrapper import XArmAPI
+    
+
+class ArmAPI(ABC):
+    @abstractmethod
+    def close_gripper(self):
+        pass
+    @abstractmethod
+    def open_gripper(self):
+        pass
+    @abstractmethod
+    def get_eef_position_orientation(self):
+        pass
+    @abstractmethod
+    def get_joint_positions(self):
+        pass
+    @abstractmethod
+    def set_gripper_position(self,position,wait):
+        pass
+    @abstractmethod
+    def get_gripper_position(self):
+        pass
+    
+class SimXArmAPI(ArmAPI):
+    def __init__(self, robot):
+        self.robot = robot
+    def close_gripper(self):
+        self.robot.close_gripper()
+    def open_gripper(self):
+        self.robot.open_gripper()
+    def get_eef_position_orientation(self):
+        return self.robot.get_current_eef_position()
+    def get_joint_positions(self):
+        return self.robot.get_joint_positions()
+    def set_gripper_position(self,position,wait):
+        self.robot.set_gripper_position(position,wait)
+    def get_gripper_position(self):
+        return self.robot.get_gripper_position()
+
+
+class RealXArmAPI(ArmAPI):
+    def __init__(self, ip, is_radian=True):
+        self.arm = XArmAPI(ip, is_radian=is_radian)
+        self.angles = self.arm.angles
+    def close_gripper(self):
+        self.arm.set_gripper_position(0, wait=True)
+        while code!=0 :
+            code = self.arm.get_gripper_position()[0]
+    def open_gripper(self):
+        self.arm.set_gripper_position(850, wait=True)
+        while code!=0 :
+            code = self.arm.get_gripper_position()[0]
+    def get_eef_position_orientation(self):
+        xyz_rpy = np.array(self.arm.position) 
+        xyz = xyz_rpy[:3]/1000.0
+        rpy = xyz_rpy[3:]
+        w_qx_qy_qz=euler_angles_to_quats(rpy) 
+        return xyz,w_qx_qy_qz
+    def get_joint_positions(self):
+        return self.arm.angles
+    # def set_gripper_position(self,position,wait):
+    #     self.arm.set_gripper_position(position, wait)
+    # def get_gripper_position(self):
+    #     return self.arm.get_gripper_position()
+    
+        
 
 class CuroboController(BaseController):
     def __init__(
@@ -130,6 +195,7 @@ class CuroboController(BaseController):
         my_task: BaseTask,
         name: str = "curobo_controller",
         constrain_grasp_approach: bool = False,
+        real_arm: XArmAPI = None,#realArmAPI
     ) -> None:
         BaseController.__init__(self, name=name)
         self.my_task = my_task
@@ -137,6 +203,9 @@ class CuroboController(BaseController):
         self.constraint_approach = constrain_grasp_approach
         self.old_position = np.zeros(3)
         self.old_orientation = np.zeros(4)
+        self.current_eef_position = np.zeros(3)
+        self.current_eef_orientation = np.zeros(4)
+        self.real_arm = real_arm
         
     def setup_scene(self):
         # Create a world with the robot and the object
@@ -285,7 +354,7 @@ class CuroboController(BaseController):
             finetune_attempts = 20
         )
         
-        self.motion_gen_result = MotionGenResult()
+        self.motion_gen_result = MotionGenResult()##How to use it
 
         print("Curobo is Ready")
         
@@ -371,8 +440,8 @@ class CuroboController(BaseController):
         self.motion_gen.update_world(obstacles)
         print("Updated World")
         carb.log_info("Synced CuRobo world from stage.")
-        
-    def plan(self,goal_position, goal_orientation, arm:XArmAPI=None):
+    
+    def plan_sim(self,goal_position, goal_orientation):
         # Generate a plan to reach the goal
         ik_goal = Pose(
             position=self.tensor_args.to_device(goal_position),
@@ -380,9 +449,29 @@ class CuroboController(BaseController):
         )
         sim_js = self.robot.get_joints_state()
         #sim_js_names = self.robot.dof_names
-        print("Arm angles",arm.angles)
+        cu_js = JointState(
+            position=self.tensor_args.to_device(sim_js.positions),
+            velocity=self.tensor_args.to_device(sim_js.velocities) * 0.0,
+            acceleration=self.tensor_args.to_device(sim_js.velocities) * 0.0,
+            jerk=self.tensor_args.to_device(sim_js.velocities) * 0.0,
+            joint_names=self.j_names,
+        )
+        print("* * * * * * * * * * * * * * * ** sim_js",self.tensor_args.to_device(sim_js.positions))
+        cu_js = cu_js.get_ordered_joint_state(self.motion_gen.kinematics.joint_names)
+        result = self.motion_gen.plan_single(cu_js.unsqueeze(0), ik_goal, self.plan_config.clone())
+        return result
+        
+    def plan_real(self,goal_position, goal_orientation):
+        # Generate a plan to reach the goal
+        ik_goal = Pose(
+            position=self.tensor_args.to_device(goal_position),
+            quaternion=self.tensor_args.to_device(goal_orientation),
+        )
+        sim_js = self.robot.get_joints_state()
+        #sim_js_names = self.robot.dof_names
+        print("Arm angles",self.real_arm.angles)
         # Ajouter 5 zeros au angles
-        angles = arm.angles + [0.0, 0.0, 0.0, 0.0, 0.0]
+        angles = self.real_arm.angles + [0.0, 0.0, 0.0, 0.0, 0.0]
         angles_array = torch.tensor(angles, dtype=torch.float32,device='cuda:0')
         print("Arm angles",angles_array)
         print("sim_js",self.tensor_args.to_device(sim_js.positions))
@@ -401,12 +490,12 @@ class CuroboController(BaseController):
         result = self.motion_gen.plan_single(cu_js.unsqueeze(0), ik_goal, self.plan_config.clone())
         return result
         
-    def forward(self,goal_position, goal_orientation):##add arm to control real arm####################################################
+    def forward_sim(self,goal_position, goal_orientation):
         if self.cmd_plan is None:
             self.cmd_idx = 0
             self._step_idx = 0
             # Execute the plan
-            result = self.plan(goal_position, goal_orientation)            
+            result = self.plan_sim(goal_position, goal_orientation)            
             succ = result.success.item()
             if succ:
                 print("Plan converged to a solution.")
@@ -439,11 +528,11 @@ class CuroboController(BaseController):
             art_action = None
         self._step_idx += 1
         return art_action
-    def forward_real(self,goal_position, goal_orientation,arm:XArmAPI=None):
+    def forward_real(self,goal_position, goal_orientation):
         if self.pose_list == []:
             self.old_position = goal_position
             self.old_orientation = goal_orientation
-            result = self.plan(goal_position, goal_orientation, arm=arm)            
+            result = self.plan_real(goal_position, goal_orientation, arm=self.real_arm)            
             succ = result.success.item()
             if succ:
                 print("Plan converged to a solution.")
@@ -454,15 +543,33 @@ class CuroboController(BaseController):
                 carb.log_warn("Plan did not converge to a solution.")
                 return None
             
-        
+    def forward(self,goal_position, goal_orientation):
+        if self.real_arm is None:
+            return self.forward_sim(goal_position, goal_orientation)
+        else:
+            return self.forward_real(goal_position, goal_orientation)
 
-    def get_current_eef_position(self):
+    def get_current_eef_position_sim(self):
         self.current_eef_position = self.robot.end_effector.get_world_pose()[0]
         self.current_eef_orientation = self.robot.end_effector.get_world_pose()[1]
+
+    def get_current_eef_position_real(self):
+        xyz_rpy = np.array(self.real_arm.position) 
+        xyz = xyz_rpy[:3]/1000.0
+        rpy = xyz_rpy[3:]
+        w_qx_qy_qz=euler_angles_to_quats(rpy) 
+        self.current_eef_position = xyz
+        self.current_eef_orientation = w_qx_qy_qz
+    
+    def get_current_eef_position(self):
+        if self.real_arm is None:
+            self.get_current_eef_position_sim()
+        else:
+            self.get_current_eef_position_real()
         
     
-    def is_target_reached(self, goal_position, goal_orientation,real_arm:XArmAPI=None)->bool:
-        if real_arm is None:
+    def is_target_reached(self, goal_position, goal_orientation)->bool:
+        if self.real_arm is None:
             # Check if the target has been reached
             self.get_current_eef_position()
             if ((np.linalg.norm(goal_position - self.current_eef_position) < 0.01)and ((2*np.arccos(np.abs(np.dot(goal_orientation, self.current_eef_orientation))))< 0.01)):
@@ -470,7 +577,7 @@ class CuroboController(BaseController):
             else:
                 return False
         else:
-            xyz_rpy = np.array(real_arm.position) 
+            xyz_rpy = np.array(self.real_arm.position) 
             xyz = xyz_rpy[:3]/1000.0
             rpy = xyz_rpy[3:]
             w_qx_qy_qz=euler_angles_to_quats(rpy) 
@@ -487,12 +594,32 @@ class CuroboController(BaseController):
             else:
                 return False
             
+            
+    def attach_object_sim(self,cube_name):
+        # Attach the object to the robot and add the object to the motion generator
+        sim_js = self.robot.get_joints_state()
+        cu_js = JointState(
+            position=self.tensor_args.to_device(sim_js.positions),
+            velocity=self.tensor_args.to_device(sim_js.velocities) * 0.0,
+            acceleration=self.tensor_args.to_device(sim_js.velocities) * 0.0,
+            jerk=self.tensor_args.to_device(sim_js.velocities) * 0.0,
+            joint_names=self.j_names,
+        )
+        self.motion_gen.attach_objects_to_robot(
+            cu_js,
+            [cube_name],
+            link_name="attached_object",
+            sphere_fit_type=SphereFitType.VOXEL_VOLUME_SAMPLE_SURFACE,
+            world_objects_pose_offset=Pose.from_list([0, 0, -0.17, 1, 0, 0, 0], self.tensor_args),
+            remove_obstacles_from_world_config = False,
+            surface_sphere_radius = 0.005
+        )      
 
-    def attach_object(self,cube_name,arm:XArmAPI=None):
+    def attach_object_real(self,cube_name):
         # Attach the object to the robot and add the object to the motion generator
         sim_js = self.robot.get_joints_state()
         # Ajouter 5 zeros au angles
-        angles = arm.angles + [0.0, 0.0, 0.0, 0.0, 0.0]
+        angles = self.real_arm.angles + [0.0, 0.0, 0.0, 0.0, 0.0]
         angles_array = torch.tensor(angles, dtype=torch.float32,device='cuda:0')
         print("Arm angles",angles_array)
         print("sim_js",self.tensor_args.to_device(sim_js.positions))
@@ -513,11 +640,21 @@ class CuroboController(BaseController):
             surface_sphere_radius = 0.005
         )
     
+    def attach_object(self,cube_name):
+        if self.real_arm is None:
+            self.attach_object_sim(cube_name)
+        else:
+            self.attach_object_real(cube_name)
+    
     def detach_object(self):
         # Detach the object from the robot and remove the object from the motion generator
         self.motion_gen.detach_object_from_robot(link_name="attached_object",)
         
     def close_gripper(self):
+        if self.real_arm is not None:
+            self.real_arm.set_gripper_position(0, wait=True)
+            while code!=0 :
+                code = self.real_arm.get_gripper_position()[0]
         gripper_positions = self.gripper.get_joint_positions()
         while gripper_positions[0] < 0.628 :
             print(gripper_positions)
@@ -525,6 +662,10 @@ class CuroboController(BaseController):
             self.gripper.apply_action(ArticulationAction(joint_positions=[gripper_positions[0] + 0.628, gripper_positions[1] - 0.628]))
             self.my_world.step(render=True)
     def open_gripper(self):
+        if self.real_arm is not None:
+            self.real_arm.set_gripper_position(850, wait=True)
+            while code!=0 :
+                code = self.real_arm.get_gripper_position()[0]
         gripper_positions = self.gripper.get_joint_positions()
         while gripper_positions[0] > 1e-3 :
             print(gripper_positions)
@@ -535,7 +676,7 @@ class CuroboController(BaseController):
     
 ####Attention update collision checking with the cube before picking
 
-class CuroboPickPlaceTasks(BaseTask):#ManageCurobo
+class CuroboPickPlaceTasks(BaseTask):
     def __init__(self, name:str, offset: Optional[np.ndarray] = None):
         super().__init__(name, offset=None)
         self.offset = offset
@@ -570,15 +711,15 @@ class CuroboPickPlaceTasks(BaseTask):#ManageCurobo
         self.random_cube.set_world_pose(goal_position,goal_orientation)
        
     #comprendre comment fonctionne observations
-    # def get_observations(self,robot):
+    def get_observations(self,robot):
 
-    #     current_joint_positions = robot.get_joint_positions()
-    #     observations = {
-    #         robot.name: {
-    #             "joint_positions": current_joint_positions,
-    #         },         
-    #     }
-    #     return observations
+        current_joint_positions = robot.get_joint_positions()
+        observations = {
+            robot.name: {
+                "joint_positions": current_joint_positions,
+            },         
+        }
+        return observations
     
     
     def get_params(self):
@@ -622,7 +763,7 @@ def main():
 
     
     curobotask=CuroboPickPlaceTasks(name="pickplace")
-    curobo = CuroboController(my_task=curobotask,constrain_grasp_approach=False)
+    curobo = CuroboController(my_task=curobotask,constrain_grasp_approach=False,real_arm=arm)
 
     curobo.setup_scene()
     curobo.config_motion_gen()
@@ -639,10 +780,7 @@ def main():
     with_cube = False
     prog_step =0
     code = -1
-    arm.set_gripper_position(850, wait=True)
-    while code!=0 :
-        code = arm.get_gripper_position()[0]
-        print("Wait gripper action")
+    curobo.open_gripper()
     while simulation_app.is_running():
         task_step+=1
         curobo.my_world.step(render=True)    
@@ -669,16 +807,13 @@ def main():
         if prog_step == 0:
             position = curobotask.cube_position
             orientation = curobotask.cube_orientation
-            if curobo.is_target_reached(goal_position=position, goal_orientation=orientation,real_arm=arm):
+            if curobo.is_target_reached(goal_position=position, goal_orientation=orientation):
                 curobo.update_world_obstacles_before_taking()
                 curobo.attach_object(cube_name="/World/random_cube",arm=arm)
                 prog_step=1
                 curobotask.get_cube_grip_pos_orient() 
         if prog_step ==1:
-            arm.set_gripper_position(0, wait=True)
-            while code!=0 :
-                code = arm.get_gripper_position()[0]
-                print("Wait gripper action")
+            curobo.close_gripper()
             position = (curobotask.cube_position.copy() + np.array([0.0, 0.0, 0.35]))
             orientation = euler_angles_to_quats([3.1415927 ,0,0 ])
             # print("position error",np.linalg.norm(position-curobo.current_eef_position))
@@ -688,37 +823,34 @@ def main():
             # print("orientation",orientation)
             # print("eef_position",curobo.current_eef_position)
             # print("eef_orientation",curobo.current_eef_orientation)
-            if curobo.is_target_reached(goal_position=position, goal_orientation=orientation,real_arm=arm):
+            if curobo.is_target_reached(goal_position=position, goal_orientation=orientation):
                 curobo.update_world_obstacles_after_rising()
                 prog_step=2
         if prog_step ==2:
             position = [0.43, 0.26, 0.42]
             orientation = [0, 1, 0, 0.0]
             
-            if curobo.is_target_reached(goal_position=position, goal_orientation=orientation,real_arm=arm):
+            if curobo.is_target_reached(goal_position=position, goal_orientation=orientation):
                 prog_step=3
         if prog_step ==3:
             curobo.update_world_obstacles_after_rising()
             position = [0.40, 0.40, 0.25]
             orientation = [0, 0.7071, 0, 0.7071]
-            if curobo.is_target_reached(goal_position=position, goal_orientation=orientation,real_arm=arm):
+            if curobo.is_target_reached(goal_position=position, goal_orientation=orientation):
                 prog_step=4
         if prog_step == 4:
             position = [0.43, 0.27, 0.42]
             orientation = [0, 1, 0, 0.0]
-            if curobo.is_target_reached(goal_position=position, goal_orientation=orientation,real_arm=arm):
+            if curobo.is_target_reached(goal_position=position, goal_orientation=orientation):
                 curobo.update_world_obstacles_after_detach()
                 curobo.open_gripper()
                 curobo.detach_object()
                 prog_step=5
         if prog_step == 5:
-            arm.set_gripper_position(850, wait=True)
-            while code!=0 :
-                code = arm.get_gripper_position()[0]
-                print("Wait gripper action")
+            curobo.open_gripper()
             position = [0.40, 0.40, 0.25]
             orientation = [0, 0.7071, 0, 0.7071]
-            if curobo.is_target_reached(goal_position=position, goal_orientation=orientation,real_arm=arm):
+            if curobo.is_target_reached(goal_position=position, goal_orientation=orientation):
                 curobotask.set_cube_pos_orient([0.43, 0.27, 0.41],[0,1,0,0])
                 curobotask.get_cube_grip_pos_orient()
                 prog_step=6
@@ -728,35 +860,33 @@ def main():
             position = (curobotask.cube_position)
             orientation = [0, 1, 0, 0.0]
             curobo.get_current_eef_position()
-            print("Curobo target reached : ",curobo.is_target_reached(goal_position=position, goal_orientation=orientation,real_arm=arm))
-            if curobo.is_target_reached(goal_position=position, goal_orientation=orientation,real_arm=arm):
+            print("Curobo target reached : ",curobo.is_target_reached(goal_position=position, goal_orientation=orientation))
+            if curobo.is_target_reached(goal_position=position, goal_orientation=orientation):
                 prog_step = 7
                 curobotask.get_cube_grip_pos_orient()
         if prog_step == 7:
             position = curobotask.cube_position - np.array([0.0,0,0.01])
             orientation = [0,1,0,0]
-            if curobo.is_target_reached(goal_position=position, goal_orientation=orientation,real_arm=arm):
+            if curobo.is_target_reached(goal_position=position, goal_orientation=orientation):
                 curobo.update_world_obstacles_before_taking()
-                curobo.attach_object(cube_name="/World/random_cube",arm=arm)
+                curobo.attach_object(cube_name="/World/random_cube")
                 prog_step = 8
                 curobotask.get_cube_grip_pos_orient()
         if prog_step == 8:
-            arm.set_gripper_position(0, wait=True)
-            while code!=0 :
-                code = arm.get_gripper_position()[0]
+            curobo.close_gripper()
             position =(curobotask.cube_position + np.array([0.0,0,0.03]))
             orientation = [0,1,0,0]
             curobo.update_world_obstacles_after_taking()
-            if curobo.is_target_reached(goal_position=position, goal_orientation=orientation,real_arm=arm):
+            if curobo.is_target_reached(goal_position=position, goal_orientation=orientation):
                 prog_step = 3
                 
             
-        print("***************prog step : ",prog_step)
+        print("*****************prog step : ",prog_step)
         print("type of self.robot",type(curobo.robot))
             
         #art_action = curobo.forward(goal_position=position, goal_orientation=orientation)
-        curobo.forward_real(goal_position=position, goal_orientation=orientation,arm=arm) #,target_reached=curobo.is_target_reached(goal_position=position, goal_orientation=orientation,real_arm=arm)
         art_action = None
+        art_action = curobo.forward(goal_position=position, goal_orientation=orientation) #,target_reached=curobo.is_target_reached(goal_position=position, goal_orientation=orientation,real_arm=arm)
         if arm is not None:
             if len(curobo.pose_list) > 0:
                 speed=10
@@ -767,22 +897,24 @@ def main():
                     arm.set_servo_angle(angle=curobo.pose_list[i],speed=speed,wait=False) 
                     #time.sleep(0.04)
                     time.sleep(0.1)
-                    if True:
+                    if curobo.real_arm is not None:
                         art_action = ArticulationAction(
                             joint_positions=curobo.pose_list[i]+np.array([0,0,0,0,0,0]),
                             joint_velocities=np.zeros(6),
                             joint_indices=[0,1,2,3,4,5],
                         )
-                        if art_action is not None:
-                            print("Applying action")
-                            curobo.my_world.step(render=True) 
-                            curobo.articulation_controller.apply_action(art_action)  #See : https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.core/docs/index.html?highlight=apply_action#omni.isaac.core.controllers.ArticulationController.apply_action
-                        else:
-                            print("No action") 
+                    if art_action is not None:
+                        print("Applying action")
+                        curobo.my_world.step(render=True) 
+                        curobo.articulation_controller.apply_action(art_action)  #See : https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.core/docs/index.html?highlight=apply_action#omni.isaac.core.controllers.ArticulationController.apply_action
+                    else:
+                        print("No action")
                     i+=1
                 curobo.pose_list = []
          
-              
+        if art_action is not None:
+            curobo.articulation_controller.apply_action(art_action)  #See : https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.core/docs/index.html?highlight=apply_action#omni.isaac.core.controllers.ArticulationController.apply_action
+               
     
     #################################Uncomment to show spheres##############################        
         sim_js = curobo.robot.get_joints_state()    
