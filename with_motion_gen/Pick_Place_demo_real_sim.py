@@ -235,7 +235,6 @@ class CuroboController(BaseController):
     def config_motion_gen(self):
         
         self.cmd_plan = None
-        
         n_obstacle_cuboids = 30
         n_obstacle_mesh = 30
         trajopt_dt = None
