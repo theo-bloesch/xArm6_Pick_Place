@@ -157,7 +157,7 @@
             <mxPoint x="216" y="305" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="HIymvuDpeLksMIsw6AtP-12" value="MotionPlanning dans curoboBase ou ArmAPI ???" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+        <mxCell id="HIymvuDpeLksMIsw6AtP-12" value="&lt;font style=&quot;color: rgb(255, 41, 17);&quot;&gt;MotionPlanning dans curoboBase ou ArmAPI ???&lt;/font&gt;" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
           <mxGeometry x="705" y="418" width="290" height="30" as="geometry" />
         </mxCell>
       </root>

@@ -764,8 +764,8 @@ def main():
                 for i in range(len(curobo.pose_list)):
                     print("Positon numero : ",i)
                     arm.set_servo_angle(angle=curobo.pose_list[i],speed=speed,wait=False) 
-                    #time.sleep(0.04)
-                    time.sleep(0.1)
+                    time.sleep(0.04)
+                   #time.sleep(0.1)
                     if True:
                         art_action = ArticulationAction(
                             joint_positions=curobo.pose_list[i]+np.array([0,0,0,0,0,0]),
@@ -783,24 +783,24 @@ def main():
          
               
     
-    #################################Uncomment to show spheres##############################        
-        sim_js = curobo.robot.get_joints_state()    
-        sim_js_names = curobo.robot.dof_names
-        cu_js = JointState(
-        position=curobo.tensor_args.to_device(sim_js.positions),
-        velocity=curobo.tensor_args.to_device(sim_js.velocities),  # * 0.0,
-        acceleration=curobo.tensor_args.to_device(sim_js.velocities) * 0.0,
-        jerk=curobo.tensor_args.to_device(sim_js.velocities) * 0.0,
-        joint_names=sim_js_names,
-        )
+    # #################################Uncomment to show spheres##############################        
+    #     sim_js = curobo.robot.get_joints_state()    
+    #     sim_js_names = curobo.robot.dof_names
+    #     cu_js = JointState(
+    #     position=curobo.tensor_args.to_device(sim_js.positions),
+    #     velocity=curobo.tensor_args.to_device(sim_js.velocities),  # * 0.0,
+    #     acceleration=curobo.tensor_args.to_device(sim_js.velocities) * 0.0,
+    #     jerk=curobo.tensor_args.to_device(sim_js.velocities) * 0.0,
+    #     joint_names=sim_js_names,
+    #     )
 
-        cu_js.velocity *= 0.0
-        cu_js.acceleration *= 0.0
+    #     cu_js.velocity *= 0.0
+    #     cu_js.acceleration *= 0.0
 
-        cu_js = cu_js.get_ordered_joint_state(curobo.motion_gen.kinematics.joint_names)
-        if False:
-            visualize_sphere(curobo.motion_gen, cu_js, spheres=None)    
-    #################################Uncomment to show spheres##############################       
+    #     cu_js = cu_js.get_ordered_joint_state(curobo.motion_gen.kinematics.joint_names)
+    #     if False:
+    #         visualize_sphere(curobo.motion_gen, cu_js, spheres=None)    
+    # #################################Uncomment to show spheres##############################       
     simulation_app.close()
              
     

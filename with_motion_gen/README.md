@@ -117,6 +117,9 @@ print("List of joint angle to perform the trajectory", traj_list)
 
 ## Example with ufactory xarm6 robot (OOP : Based on the [simple stacking example](Exemple_curobo/simple_stacking.py))
 
+### UML diagram
+
+![image](/with_motion_gen/IsaacSimCurobo.svg)
 
 For this example I created two classes :
 

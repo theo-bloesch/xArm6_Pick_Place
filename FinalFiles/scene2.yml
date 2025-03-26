@@ -1,0 +1,42 @@
+##
+## Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+##
+## NVIDIA CORPORATION, its affiliates and licensors retain all intellectual
+## property and proprietary rights in and to this material, related
+## documentation and any modifications thereto. Any use, reproduction,
+## disclosure or distribution of this material and related documentation
+## without an express license agreement from NVIDIA CORPORATION or
+## its affiliates is strictly prohibited.
+##
+  cuboid:
+   # limit_1:
+   #   dims: [0.8, 0.008, 1.80]
+   #   pose: [0.37, -0.30, 0, 0, 0, 0, 0.0] # x, y, z, qx, qy, qz, qw
+   # limit_2:
+   #  dims: [0.008, 1.20, 1.80]
+   #   pose: [-0.1, 0.3, 0, 0, 0, 0, 0.0] # x, y, z, qx, qy, qz, qw
+    limit_3:
+      dims: [0.80, 1.20, 0.008] # x, y, z
+      pose: [0.27, 0.26, 1.5, 0, 0, 0, 0.0] # x, y, z, qx, qy, qz, qw 
+    table:
+      dims: [0.80, 1.20, 0.008] # x, y, z
+      pose: [0.27, 0.26, 0, 0, 0, 0, 0.0] # x, y, z, qx, qy, qz, qw
+    rack_lp:
+      dims: [0.20, 0.70, 0.008]
+      pose: [0.465,0.585,0.15,0,0,0,0]
+    rack_rp:
+      dims: [0.20, 0.70, 0.008]
+      pose: [0.465,0.585,0.35,0,0,0,0]
+    rack_tp:
+      dims: [0.20, 0.008, 0.4]
+      pose: [0.465,0.235,0.15,0,0,0,0]
+    rack_sp:
+      dims: [0.20, 0.008, 0.4]
+      pose: [0.465,0.935,0.15,0,0,0,0]
+    rack_stp:
+      dims: [0.008, 0.7, 0.1]
+      pose: [0.365,0.585,0.40,0,0,0,0]
+    # cube_1:
+    #   pose: [-0.3, -0.3, 0.03, 0.0, 0.0, -1, 0.0]
+    #   dims: [0.05, 0.05, 0.07]
+    #   color: [0.8, 0.0, 0.0, 1.0]

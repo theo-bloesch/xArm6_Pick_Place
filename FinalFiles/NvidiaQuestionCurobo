@@ -1,0 +1,65 @@
+Question to ask to nvidia forum :
+
+What the différence between these three argument and which one to use when controlling real robot ?
+         get_paths() → List[JointState]
+
+             Get interpolated trajectories from the result. Use for batched queries.
+
+             This will return unsuccessful trajectories as well. Use MotionGenResult.get_successful_paths to get only successful 
+             trajectories.
+
+             Returns:
+
+                 Interpolated trajectories. Check
+
+                     MotionGenResult.interpolation_dt for the time between steps.
+
+             Return type:
+
+                 List[JointState]
+
+         get_successful_paths() → List[Tensor]
+
+             Get successful interpolated trajectories from the result. Use for batched queries.
+
+             Returns:
+
+                 Interpolated trajectories. Check
+
+                     MotionGenResult.interpolation_dt for the time between steps.
+
+             Return type:
+
+                 List[JointState]
+
+         get_interpolated_plan() → JointState
+
+             Get interpolated trajectory from the result.
+
+             Returns:
+
+                 Interpolated trajectory. Check MotionGenResult.interpolation_dt for the time between steps.
+             Return type:
+
+                 JointState
+
+Que fait cela :
+
+
+        if self._step_idx % 2 == 0 :
+            cmd_state = self.cmd_plan[self.cmd_idx]
+            self.cmd_idx += 1
+
+            # get full dof state
+            art_action = ArticulationAction(
+                cmd_state.position.cpu().numpy(),
+                cmd_state.velocity.cpu().numpy() * 0.0,
+                joint_indices=self.idx_list,
+            )
+            if self.cmd_idx >= len(self.cmd_plan.position):
+                self.cmd_idx = 0
+                self.cmd_plan = None
+        else:
+            art_action = None
+        self._step_idx += 1
+        return art_action
